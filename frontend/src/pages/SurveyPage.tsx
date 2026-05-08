@@ -64,7 +64,8 @@ const SurveyPage: React.FC = () => {
 
       try {
         setIsLoadingSurvey(true);
-        const response = await axios.get(`http://localhost:5000/api/surveys/${surveyId}`);
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+        const response = await axios.get(`${API_URL}/surveys/${surveyId}`);
         setSurvey(response.data);
       } catch (err: any) {
         setFetchError(err.response?.data?.error || 'Failed to load survey');
