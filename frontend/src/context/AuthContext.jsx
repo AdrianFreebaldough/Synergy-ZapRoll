@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { AuthContext } from './authContext'
+import { AuthContext } from './AuthContextValue'
 
 export function AuthProvider({ children }) {
   const [authState, setAuthState] = useState({ token: null, role: null, user: null })

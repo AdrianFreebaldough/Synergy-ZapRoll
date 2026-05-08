@@ -87,7 +87,7 @@ Synergy-ZapRoll/
 │   │   ├── config/
 │   │   │   └── env.js
 │   │   ├── context/
-│   │   │   ├── authContext.js
+│   │   │   ├── AuthContextValue.js
 │   │   │   └── AuthContext.jsx
 │   │   ├── hooks/
 │   │   │   └── useAuth.js
