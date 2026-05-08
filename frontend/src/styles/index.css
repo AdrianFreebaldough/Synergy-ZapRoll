@@ -1,0 +1,68 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply antialiased text-app-text-primary overflow-x-hidden;
+    background-color: #020617;
+  }
+}
+
+@layer components {
+  /* SaaS-style Glassmorphism - Clean & Enterprise */
+  .glass-card {
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(30, 41, 59, 0.5);
+    @apply shadow-[0_20px_50px_rgba(0,0,0,0.5)] rounded-2xl;
+  }
+  
+  /* Modern Slate Inputs */
+  .glass-input {
+    background: rgba(2, 6, 23, 0.4);
+    border: 1px solid #1e293b;
+    @apply rounded-xl text-white placeholder:text-app-text-muted outline-none appearance-none transition-all duration-300;
+  }
+
+  .glass-input:focus {
+    background: rgba(2, 6, 23, 0.6);
+    @apply border-app-primary ring-4 ring-app-primary/10;
+  }
+
+  /* Dropdown Options matching Slate Surface */
+  select.glass-input option {
+    background-color: #0f172a;
+    color: white;
+  }
+
+  .qcu-background {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background: radial-gradient(circle at 50% -20%, #0f172a 0%, #020617 100%);
+  }
+
+  /* Subtle blue glow accents for modern SaaS feel */
+  .qcu-background::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: 
+      radial-gradient(circle at 10% 20%, rgba(37, 99, 235, 0.05) 0%, transparent 40%),
+      radial-gradient(circle at 90% 80%, rgba(59, 130, 246, 0.03) 0%, transparent 40%);
+    pointer-events: none;
+    z-index: 2;
+  }
+}
+
+/* Custom Scrollbar matching Dark UI */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #020617;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-800 rounded-full hover:bg-slate-700;
+}
