@@ -6,6 +6,7 @@ import EmployeeRegistration from '../pages/EmployeeRegistration';
 import GuestRegistration from '../pages/GuestRegistration';
 import SpeakerRegistration from '../pages/SpeakerRegistration';
 import ParticipantRegistration from '../pages/ParticipantRegistration';
+import SurveyPage from '../pages/SurveyPage';
 
 const AppRoutes: React.FC = () => {
   return (
@@ -16,6 +17,7 @@ const AppRoutes: React.FC = () => {
         <Route path="/register/guest" element={<GuestRegistration />} />
         <Route path="/register/speaker" element={<SpeakerRegistration />} />
         <Route path="/register/participant" element={<ParticipantRegistration />} />
+        <Route path="/survey/:surveyId" element={<SurveyPage />} />
         <Route path="*" element={<Navigate to="/register/student" replace />} />
       </Routes>
     </MainLayout>
