@@ -104,7 +104,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ category, title }) 
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full py-4 bg-app-primary text-white font-bold rounded-xl shadow-lg hover:bg-app-accent transition-all duration-300 disabled:opacity-20 uppercase tracking-widest text-[11px]"
+            className="w-full py-4 bg-app-primary text-white font-bold rounded-xl hover:bg-app-accent transition-all duration-300 disabled:opacity-20 uppercase tracking-widest text-[11px]"
           >
             {isLoading ? 'Processing...' : 'Complete Registration'}
           </button>

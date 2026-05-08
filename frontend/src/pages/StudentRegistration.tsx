@@ -93,7 +93,7 @@ const StudentRegistration: React.FC = () => {
           <button
             type="submit"
             disabled={isLoading || !yearLevel}
-            className="w-full py-3.5 bg-app-primary text-white font-bold rounded-xl shadow-lg hover:bg-app-accent active:scale-[0.98] transition-all duration-300 disabled:opacity-20 uppercase tracking-widest text-[11px]"
+            className="w-full py-3.5 bg-app-primary text-white font-bold rounded-xl hover:bg-app-accent transition-all duration-300 disabled:opacity-20 uppercase tracking-widest text-[11px]"
           >
             {isLoading ? 'Processing...' : 'Complete Registration'}
           </button>

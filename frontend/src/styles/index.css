@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+html {
+  scroll-behavior: smooth;
+}
+
 @layer base {
   body {
     @apply antialiased text-app-text-primary overflow-x-hidden;
@@ -15,7 +19,7 @@
     background: rgba(15, 23, 42, 0.6);
     backdrop-filter: blur(12px);
     border: 1px solid rgba(30, 41, 59, 0.5);
-    @apply shadow-[0_20px_50px_rgba(0,0,0,0.5)] rounded-2xl;
+    @apply rounded-2xl;
   }
   
   /* Modern Slate Inputs */
@@ -56,13 +60,18 @@
   }
 }
 
-/* Custom Scrollbar matching Dark UI */
+/* Clean Minimalist Scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 1.5px;
+  height: 1.5px;
 }
 ::-webkit-scrollbar-track {
-  background: #020617;
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  @apply bg-slate-800 rounded-full hover:bg-slate-700;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
 }

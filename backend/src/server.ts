@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import registrationRoutes from './routes/registrationRoutes.js';
+import surveyRoutes from './routes/surveyRoutes.js';
 
 dotenv.config();
 
@@ -14,6 +15,7 @@ app.use(express.json());
 
 // Routes
 app.use('/api/register', registrationRoutes);
+app.use('/api/surveys', surveyRoutes);
 
 // Health Check
 app.get('/health', (req, res) => {
