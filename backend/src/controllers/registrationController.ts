@@ -21,8 +21,8 @@ export const registerEntry = async (req: Request, res: Response) => {
       });
     }
 
-    // 1. Resolve primary fields
-    const finalName = full_name || name;
+    // 1. Resolve primary fields (Check all possible name fields)
+    const finalName = full_name || name || otherData.representativeName;
     
     // 2. Extract external_id (e.g. Student ID)
     const externalId = otherData.studentId || null;
