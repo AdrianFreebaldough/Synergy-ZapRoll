@@ -3,7 +3,7 @@ import { supabase } from '../supabase/client.js';
 
 export const registerEntry = async (req: Request, res: Response) => {
   const { category } = req.params;
-  const { full_name, email, name, ...otherData } = req.body;
+  const { full_name, email, name, quotaId, ...otherData } = req.body;
 
   try {
     // 0. Auto-Fetch the latest Event ID (Production Plan)
@@ -43,6 +43,7 @@ export const registerEntry = async (req: Request, res: Response) => {
           full_name: finalName,
           email: email || null,
           external_id: externalId,
+          quota_id: quotaId || null, // Capture the quota ID here
           metadata: metadata,
           status: 'registered',
           created_at: new Date().toISOString()
