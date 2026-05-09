@@ -5,76 +5,64 @@ export const getSurveyById = async (req: Request, res: Response) => {
   const { surveyId } = req.params;
 
   try {
-    // Fetch survey metadata
-    const { data: survey, error: surveyError } = await supabase
-      .from('surveys')
+    // Fetch template from evaluation_templates
+    const { data: template, error } = await supabase
+      .from('evaluation_templates')
       .select('*')
       .eq('id', surveyId)
+      .eq('is_active', true)
       .single();
 
-    if (surveyError || !survey) throw new Error('Survey not found');
+    if (error || !template) {
+      return res.status(404).json({ error: 'Evaluation form not found or inactive' });
+    }
 
-    // Fetch questions with their options
-    const { data: questions, error: questionsError } = await supabase
-      .from('survey_questions')
-      .select(`
-        *,
-        survey_options (*)
-      `)
-      .eq('survey_id', surveyId)
-      .order('order_index', { ascending: true });
-
-    if (questionsError) throw questionsError;
-
-    // Transform options for easier frontend consumption
-    const formattedQuestions = questions.map(q => ({
-      ...q,
-      options: q.survey_options
-    }));
-
-    return res.json({
-      ...survey,
-      questions: formattedQuestions
-    });
+    // New schema stores questions as JSONB in 'questions'
+    return res.json(template);
 
   } catch (error: any) {
-    console.error('Fetch Survey Error:', error);
-    return res.status(404).json({ error: error.message });
+    console.error('Fetch Evaluation Error:', error);
+    return res.status(500).json({ error: 'Internal Server Error' });
   }
 };
 
 export const submitSurveyResponse = async (req: Request, res: Response) => {
   const { surveyId } = req.params;
-  const { answers } = req.body;
+  const { answers, registration_id, session_id } = req.body;
 
   try {
-    // 1. Create a response entry
-    const { data: response, error: responseError } = await supabase
-      .from('survey_responses')
-      .insert([{ survey_id: surveyId }])
-      .select()
-      .single();
+    // Schema: evaluation_responses
+    // Columns: template_id, registration_id, session_id, responses (JSONB)
+    const { data: result, error } = await supabase
+      .from('evaluation_responses')
+      .insert([
+        { 
+          template_id: surveyId,
+          registration_id: registration_id,
+          session_id: session_id || null,
+          responses: answers,
+          submitted_at: new Date().toISOString()
+        }
+      ])
+      .select();
 
-    if (responseError) throw responseError;
+    if (error) {
+      if (error.code === '23505') { // Unique violation
+        return res.status(400).json({ 
+          error: 'Already Submitted',
+          message: 'You have already submitted an evaluation for this session.'
+        });
+      }
+      throw error;
+    }
 
-    // 2. Prepare answer entries
-    const answerEntries = answers.map((ans: any) => ({
-      response_id: response.id,
-      question_id: ans.question_id,
-      answer_value: ans.answer_value
-    }));
-
-    // 3. Insert all answers
-    const { error: answersError } = await supabase
-      .from('survey_response_answers')
-      .insert(answerEntries);
-
-    if (answersError) throw answersError;
-
-    return res.status(201).json({ message: 'Response submitted successfully' });
+    return res.status(201).json({ 
+      message: 'Evaluation submitted successfully',
+      data: result[0]
+    });
 
   } catch (error: any) {
-    console.error('Submit Response Error:', error);
-    return res.status(500).json({ error: 'Failed to submit response' });
+    console.error('Submit Evaluation Error:', error);
+    return res.status(500).json({ error: 'Failed to submit evaluation' });
   }
 };

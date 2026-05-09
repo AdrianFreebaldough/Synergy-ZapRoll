@@ -25,6 +25,7 @@ export const guestSchema = baseSchema.extend({
 export const studentSchema = baseSchema.extend({
   category: z.literal('student'),
   yearLevel: z.enum(['3rd Year', '4th Year']),
+  email: z.string().email('Invalid email address'),
   studentId: z.string().regex(studentIdRegex, 'Format must be 00-0000').optional(),
   name: z.string().min(2, 'Name is required').optional(),
   section: z.string().min(1, 'Section is required').optional(),

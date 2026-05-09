@@ -2,12 +2,18 @@ import React from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { studentSchema, StudentFormData } from '../validations/registrationSchema';
-import { useRegistration } from '../hooks/useRegistration';
+import { useSubmission } from '../hooks/useSubmission';
 import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
+import LoadingButton from '../components/ui/LoadingButton';
+import { submitRegistration } from '../services/registrationService';
+
+import SubmissionStatus from '../components/ui/SubmissionStatus';
 
 const StudentRegistration: React.FC = () => {
-  const { register: submitData, isLoading, error, success } = useRegistration();
+  const { execute: submitData, isSubmitting, error, success, hasAlreadySubmitted } = useSubmission(
+    (data: StudentFormData) => submitRegistration('student', data)
+  );
   
   const {
     register,
@@ -23,10 +29,32 @@ const StudentRegistration: React.FC = () => {
   const studentRole = useWatch({ control, name: 'studentRole' });
 
   const onSubmit = async (data: StudentFormData) => {
-    await submitData('student', data);
+    try {
+      await submitData(data);
+    } catch (err) {
+      // Error is handled by the hook
+    }
   };
 
-  if (success) return <SuccessView />;
+  if (hasAlreadySubmitted) {
+    return (
+      <SubmissionStatus 
+        type="already-submitted"
+        title="Already Registered"
+        message="Our system has already received your student registration. Duplicate entries are not allowed."
+      />
+    );
+  }
+
+  if (success) {
+    return (
+      <SubmissionStatus 
+        type="success"
+        title="Registration Submitted"
+        message="Your student registration has been recorded successfully. Thank you for participating in the event!"
+      />
+    );
+  }
 
   return (
     <div className="glass-card p-6 md:p-8 transition-all duration-500">
@@ -36,7 +64,7 @@ const StudentRegistration: React.FC = () => {
       </div>
 
       {error && (
-        <div className="mb-6 p-3 bg-app-danger/10 border border-app-danger/20 text-app-danger rounded-xl text-[10px] animate-in fade-in">
+        <div className="mb-6 p-3 bg-app-danger/10 border border-app-danger/20 text-app-danger rounded-xl text-[10px] animate-in fade-in slide-in-from-top-1">
           {error}
         </div>
       )}
@@ -51,9 +79,16 @@ const StudentRegistration: React.FC = () => {
 
         {yearLevel === '3rd Year' && (
           <div className="space-y-4 animate-in fade-in slide-in-from-left-2 duration-500">
+            <Input 
+              label="Email Address" 
+              type="email"
+              placeholder="your.name@example.com"
+              {...register('email')} 
+              error={errors.email?.message} 
+            />
             <Input label="Student ID" {...register('studentId')} placeholder="00-0000" error={errors.studentId?.message} />
             <Input label="Full Name" {...register('name')} error={errors.name?.message} />
-            <Input label="Section" {...register('section')} error={errors.section?.message} />
+            <Input label="Section" {...register('section')} placeholder="SBIT-3G" error={errors.section?.message} />
           </div>
         )}
 
@@ -70,11 +105,24 @@ const StudentRegistration: React.FC = () => {
               error={errors.studentRole?.message} 
             />
 
+            {studentRole && (
+              <div className="animate-in fade-in zoom-in-95 duration-500">
+                <Input 
+                  label="Email Address" 
+                  type="email"
+                  placeholder="your.name@example.com"
+                  {...register('email')} 
+                  error={errors.email?.message} 
+                  className="mb-4"
+                />
+              </div>
+            )}
+
             {studentRole === 'Participant' && (
               <div className="space-y-4 animate-in fade-in zoom-in-95 duration-500">
                 <Input label="Student ID" {...register('studentId')} placeholder="00-0000" error={errors.studentId?.message} />
                 <Input label="Full Name" {...register('name')} error={errors.name?.message} />
-                <Input label="Section" {...register('section')} error={errors.section?.message} />
+                <Input label="Section" {...register('section')} placeholder="SBIT-3G" error={errors.section?.message} />
               </div>
             )}
 
@@ -82,7 +130,7 @@ const StudentRegistration: React.FC = () => {
               <div className="space-y-4 animate-in fade-in zoom-in-95 duration-500">
                 <Input label="Representative Name" {...register('representativeName')} error={errors.representativeName?.message} />
                 <Input label="Group Number" {...register('groupNumber')} error={errors.groupNumber?.message} />
-                <Input label="Section" {...register('section')} error={errors.section?.message} />
+                <Input label="Section" {...register('section')} placeholder="SBIT-3G" error={errors.section?.message} />
                 <Input label="Capstone Title" {...register('capstoneTitle')} error={errors.capstoneTitle?.message} />
               </div>
             )}
@@ -90,35 +138,19 @@ const StudentRegistration: React.FC = () => {
         )}
 
         <div className="pt-2">
-          <button
+          <LoadingButton
             type="submit"
-            disabled={isLoading || !yearLevel}
-            className="w-full py-3.5 bg-app-primary text-white font-bold rounded-xl hover:bg-app-accent transition-all duration-300 disabled:opacity-20 uppercase tracking-widest text-[11px]"
+            isLoading={isSubmitting}
+            disabled={!yearLevel}
+            loadingText="Saving Registration..."
+            size="lg"
           >
-            {isLoading ? 'Processing...' : 'Complete Registration'}
-          </button>
+            Complete Registration
+          </LoadingButton>
         </div>
       </form>
     </div>
   );
 };
-
-const SuccessView = () => (
-  <div className="glass-card p-10 text-center animate-in zoom-in duration-500">
-    <div className="w-16 h-16 bg-app-success/10 text-app-success rounded-full flex items-center justify-center mx-auto mb-4 border border-app-success/20">
-      <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-      </svg>
-    </div>
-    <h2 className="text-xl font-bold text-app-text-primary mb-1">Registration Saved</h2>
-    <p className="text-app-text-muted text-[10px] uppercase tracking-widest">Entry recorded in system</p>
-    <button 
-      onClick={() => window.location.reload()}
-      className="mt-6 text-app-primary text-[10px] font-bold uppercase tracking-widest hover:text-app-accent transition-colors"
-    >
-      New Submission
-    </button>
-  </div>
-);
 
 export default StudentRegistration;

@@ -2,12 +2,17 @@ import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { guestSchema, GuestFormData } from '../validations/registrationSchema';
-import { useRegistration } from '../hooks/useRegistration';
+import { useSubmission } from '../hooks/useSubmission';
 import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
+import LoadingButton from '../components/ui/LoadingButton';
+import { submitRegistration } from '../services/registrationService';
+import SubmissionStatus from '../components/ui/SubmissionStatus';
 
 const GuestRegistration: React.FC = () => {
-  const { register: submitData, isLoading, error, success } = useRegistration();
+  const { execute: submitData, isSubmitting, error, success, hasAlreadySubmitted } = useSubmission(
+    (data: GuestFormData) => submitRegistration('guest', data)
+  );
   
   const {
     register,
@@ -19,10 +24,32 @@ const GuestRegistration: React.FC = () => {
   });
 
   const onSubmit = async (data: GuestFormData) => {
-    await submitData('guest', data);
+    try {
+      await submitData(data);
+    } catch (err) {
+      // Error handled by hook
+    }
   };
 
-  if (success) return <SuccessView />;
+  if (hasAlreadySubmitted) {
+    return (
+      <SubmissionStatus 
+        type="already-submitted"
+        title="Already Registered"
+        message="Our system has already received your guest registration. Duplicate entries are not allowed."
+      />
+    );
+  }
+
+  if (success) {
+    return (
+      <SubmissionStatus 
+        type="success"
+        title="Registration Confirmed"
+        message="Your guest entry has been successfully recorded. Enjoy the event!"
+      />
+    );
+  }
 
   return (
     <div className="glass-card p-6 md:p-8">
@@ -32,7 +59,7 @@ const GuestRegistration: React.FC = () => {
       </div>
 
       {error && (
-        <div className="mb-6 p-3 bg-app-danger/10 border border-app-danger/20 text-app-danger rounded-xl text-[10px] animate-in fade-in">
+        <div className="mb-6 p-3 bg-app-danger/10 border border-app-danger/20 text-app-danger rounded-xl text-[10px] animate-in fade-in slide-in-from-top-1">
           {error}
         </div>
       )}
@@ -47,29 +74,18 @@ const GuestRegistration: React.FC = () => {
         <Input label="Full Name" {...register('name')} placeholder="Enter name" error={errors.name?.message} />
         
         <div className="pt-2">
-          <button
+          <LoadingButton
             type="submit"
-            disabled={isLoading}
-            className="w-full py-3.5 bg-app-primary text-white font-bold rounded-xl hover:bg-app-accent transition-all duration-300 disabled:opacity-20 uppercase tracking-widest text-[11px]"
+            isLoading={isSubmitting}
+            loadingText="Registering Guest..."
+            size="lg"
           >
-            {isLoading ? 'Processing...' : 'Complete Registration'}
-          </button>
+            Complete Registration
+          </LoadingButton>
         </div>
       </form>
     </div>
   );
 };
-
-const SuccessView = () => (
-  <div className="glass-card p-10 text-center animate-in zoom-in duration-500">
-    <div className="w-16 h-16 bg-app-success/10 text-app-success rounded-full flex items-center justify-center mx-auto mb-4 border border-app-success/20">
-      <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-      </svg>
-    </div>
-    <h2 className="text-xl font-bold text-app-text-primary mb-1">Registration Saved</h2>
-    <p className="text-app-text-muted text-[10px] uppercase tracking-widest">Entry recorded in system</p>
-  </div>
-);
 
 export default GuestRegistration;
