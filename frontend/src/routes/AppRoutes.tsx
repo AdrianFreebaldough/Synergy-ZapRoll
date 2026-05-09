@@ -9,6 +9,7 @@ const GuestRegistration = lazy(() => import('../pages/GuestRegistration'));
 const SpeakerRegistration = lazy(() => import('../pages/SpeakerRegistration'));
 const ParticipantRegistration = lazy(() => import('../pages/ParticipantRegistration'));
 const SurveyPage = lazy(() => import('../pages/SurveyPage'));
+const AttendanceEntry = lazy(() => import('../pages/attendance/AttendanceEntry'));
 const NotFound = lazy(() => import('../pages/NotFound'));
 
 // High-end loading fallback
@@ -31,6 +32,8 @@ const AppRoutes: React.FC = () => {
           <Route path="/register/speaker" element={<SpeakerRegistration />} />
           <Route path="/register/participant" element={<ParticipantRegistration />} />
           <Route path="/survey/:surveyId" element={<SurveyPage />} />
+          <Route path="/attendance/:category" element={<AttendanceEntry />} />
+          <Route path="/attendance" element={<Navigate to="/attendance/student" replace />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>
