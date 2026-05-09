@@ -1,5 +1,6 @@
 import React from 'react';
 import { useForm } from 'react-hook-form';
+import { useSearchParams } from 'react-router-dom';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { registrationSchema } from '../../validations/registrationSchema';
 import { useSubmission } from '../../hooks/useSubmission';
@@ -14,8 +15,11 @@ interface RegistrationFormProps {
 import SubmissionStatus from '../ui/SubmissionStatus';
 
 const RegistrationForm: React.FC<RegistrationFormProps> = ({ category, title }) => {
+  const [searchParams] = useSearchParams();
+  const quotaId = searchParams.get('quota_id');
+
   const { execute: submitData, isSubmitting, error, success, hasAlreadySubmitted } = useSubmission(
-    (data: any) => submitRegistration(category, data)
+    (data: any) => submitRegistration(category, { ...data, quotaId })
   );
   
   const {

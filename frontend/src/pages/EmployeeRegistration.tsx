@@ -1,5 +1,6 @@
 import React from 'react';
 import { useForm } from 'react-hook-form';
+import { useSearchParams } from 'react-router-dom';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { employeeSchema, EmployeeFormData } from '../validations/registrationSchema';
 import { useSubmission } from '../hooks/useSubmission';
@@ -10,8 +11,11 @@ import { submitRegistration } from '../services/registrationService';
 import SubmissionStatus from '../components/ui/SubmissionStatus';
 
 const EmployeeRegistration: React.FC = () => {
+  const [searchParams] = useSearchParams();
+  const quotaId = searchParams.get('quota_id');
+
   const { execute: submitData, isSubmitting, error, success, hasAlreadySubmitted } = useSubmission(
-    (data: EmployeeFormData) => submitRegistration('employee', data)
+    (data: EmployeeFormData) => submitRegistration('employee', { ...data, quotaId } as any)
   );
   
   const {
