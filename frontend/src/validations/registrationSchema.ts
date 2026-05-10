@@ -85,6 +85,7 @@ export const studentSchema = baseSchema.extend({
       if (!data.section) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Section is required", path: ["section"] });
     }
     if (data.studentRole === 'Presenter' || data.studentRole === 'Poster') {
+      if (!data.studentId) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "ID is required", path: ["studentId"] });
       if (!data.representativeName) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Required", path: ["representativeName"] });
       if (!data.groupNumber) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Required", path: ["groupNumber"] });
       if (!data.section) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Required", path: ["section"] });
