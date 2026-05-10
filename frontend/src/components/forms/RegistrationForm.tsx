@@ -53,8 +53,19 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ category, title }) 
     return (
       <SubmissionStatus 
         type="success"
-        title="Registration Submitted"
-        message={`Your ${category} registration has been recorded successfully. We look forward to seeing you at the event!`}
+        title="Registration Confirmed"
+        message="Your faculty/staff registration has been successfully recorded. No further action is required."
+      />
+    );
+  }
+
+  // Handle Capacity Reached professional UI
+  if (error === 'Registration Capacity Reached') {
+    return (
+      <SubmissionStatus 
+        type="capacity-full"
+        title="Registration Capacity Reached"
+        message="The registration limit for this participant category has already been reached. We appreciate your interest in participating. Please contact the event organizer for further assistance."
       />
     );
   }

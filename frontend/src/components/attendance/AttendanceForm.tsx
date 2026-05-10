@@ -10,13 +10,15 @@ import SubmissionStatus from '../ui/SubmissionStatus';
 
 interface AttendanceFormProps {
   category: 'student' | 'employee' | 'guest';
+  session?: 'am' | 'pm';
+  token?: string;
   title: string;
   subtitle: string;
 }
 
-const AttendanceForm: React.FC<AttendanceFormProps> = ({ category, title, subtitle }) => {
+const AttendanceForm: React.FC<AttendanceFormProps> = ({ category, session, token, title, subtitle }) => {
   const { execute: submit, isSubmitting, error, success, hasAlreadySubmitted } = useSubmission(
-    (data: AttendanceSchemaType) => submitAttendance(data)
+    (data: AttendanceSchemaType) => submitAttendance({ ...data, session, token })
   );
 
   const {
