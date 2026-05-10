@@ -17,17 +17,25 @@ export const submitAttendance = async (req: Request, res: Response) => {
 
     sessionData = sessionByToken;
 
-    // Fallback: If not found by token, try to find by name based on the sessionType (AM/PM)
-    if (!sessionData && sessionType) {
-      const searchName = sessionType.toUpperCase() === 'AM' ? 'AM Session' : 'PM Session';
-      const { data: sessionByName } = await supabase
-        .from('sessions')
-        .select('*')
-        .ilike('name', `%${searchName}%`)
-        .limit(1)
-        .single();
-      
-      sessionData = sessionByName;
+    // Fallback: If not found by token, try to find by session_type based on the sessionType (AM/PM)
+    if (!sessionData) {
+      let searchType = '';
+      if (category === 'student') {
+        searchType = sessionType?.toUpperCase() === 'AM' ? 'am-reg' : 'pm-reg';
+      } else if (category === 'employee') {
+        searchType = 'employee-reg';
+      }
+
+      if (searchType) {
+        const { data: sessionByTypeName } = await supabase
+          .from('sessions')
+          .select('*')
+          .eq('session_type', searchType)
+          .limit(1)
+          .single();
+        
+        sessionData = sessionByTypeName;
+      }
     }
 
     if (!sessionData) {
@@ -38,6 +46,14 @@ export const submitAttendance = async (req: Request, res: Response) => {
     }
 
     const session = sessionData;
+
+    // 1.1 Toggle Check (is_open column from database)
+    if (session.is_open === false) {
+      return res.status(403).json({
+        error: 'Attendance Closed',
+        message: `Attendance for the "${session.session_type}" is currently closed. Please wait for the organizer to open the session.`
+      });
+    }
 
     // 2. Find the Registration
     let query = supabase.from('registrations').select('id');
