@@ -24,11 +24,31 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ category, session, toke
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm<AttendanceSchemaType>({
     resolver: zodResolver(attendanceSchema),
     defaultValues: { category } as any,
   });
+
+  // Helper to format Student ID (00-0000)
+  const handleStudentIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (category !== 'student') return;
+    let value = e.target.value;
+    value = value.replace(/[^\d-]/g, '');
+    if ((value.match(/-/g) || []).length > 1) {
+      value = value.replace(/-+$/, '');
+    }
+    if (!value.includes('-') && value.length > 2) {
+      value = `${value.slice(0, 2)}-${value.slice(2, 6)}`;
+    }
+    if (value.includes('-') && value.indexOf('-') !== 2) {
+      const digits = value.replace(/-/g, '');
+      value = `${digits.slice(0, 2)}-${digits.slice(2, 6)}`;
+    }
+    value = value.slice(0, 7);
+    setValue('studentId' as any, value, { shouldValidate: true });
+  };
 
   const onSubmit = async (data: AttendanceSchemaType) => {
     try {
@@ -75,8 +95,9 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ category, session, toke
         {category === 'student' ? (
           <Input 
             label="Student ID" 
-            {...register('studentId' as any)} 
-            placeholder="23-1024" 
+            {...register('studentId' as any, { onChange: handleStudentIdChange })} 
+            placeholder="00-0000" 
+            maxLength={7}
             error={(errors as any).studentId?.message}
             disabled={isSubmitting}
           />

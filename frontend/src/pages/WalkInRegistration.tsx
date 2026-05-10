@@ -23,11 +23,41 @@ const WalkInRegistration: React.FC = () => {
     register,
     handleSubmit,
     control,
+    setValue,
     formState: { errors },
   } = useForm<StudentFormData>({
     resolver: zodResolver(studentSchema),
     defaultValues: { category: 'student' }
   });
+
+  // Helper to format Student ID (00-0000)
+  const handleStudentIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value;
+    
+    // 1. Remove invalid characters (only allow digits and one hyphen)
+    value = value.replace(/[^\d-]/g, '');
+    
+    // 2. Prevent multiple hyphens
+    if ((value.match(/-/g) || []).length > 1) {
+      value = value.replace(/-+$/, '');
+    }
+
+    // 3. Auto-format if they forget the hyphen
+    if (!value.includes('-') && value.length > 2) {
+      value = `${value.slice(0, 2)}-${value.slice(2, 6)}`;
+    }
+    
+    // 4. Ensure hyphen is in correct position (index 2)
+    if (value.includes('-') && value.indexOf('-') !== 2) {
+      const digits = value.replace(/-/g, '');
+      value = `${digits.slice(0, 2)}-${digits.slice(2, 6)}`;
+    }
+
+    // 5. Final length check
+    value = value.slice(0, 7);
+    
+    setValue('studentId', value, { shouldValidate: true });
+  };
 
   const yearLevel = useWatch({ control, name: 'yearLevel' });
   const studentRole = useWatch({ control, name: 'studentRole' });
@@ -100,7 +130,13 @@ const WalkInRegistration: React.FC = () => {
               {...register('email')} 
               error={errors.email?.message} 
             />
-            <Input label="Student ID" {...register('studentId')} placeholder="00-0000" error={errors.studentId?.message} />
+            <Input 
+              label="Student ID" 
+              {...register('studentId', { onChange: handleStudentIdChange })} 
+              placeholder="00-0000" 
+              maxLength={7}
+              error={errors.studentId?.message} 
+            />
             <Input label="Full Name" {...register('name')} error={errors.name?.message} />
             <Input label="Section" {...register('section')} placeholder="SBIT-3G" error={errors.section?.message} />
           </div>
@@ -134,17 +170,30 @@ const WalkInRegistration: React.FC = () => {
 
             {studentRole === 'Participant' && (
               <div className="space-y-4 animate-in fade-in zoom-in-95 duration-500">
-                <Input label="Student ID" {...register('studentId')} placeholder="00-0000" error={errors.studentId?.message} />
+                <Input 
+                  label="Student ID" 
+                  {...register('studentId', { onChange: handleStudentIdChange })} 
+                  placeholder="00-0000" 
+                  maxLength={7}
+                  error={errors.studentId?.message} 
+                />
                 <Input label="Full Name" {...register('name')} error={errors.name?.message} />
-                <Input label="Section" {...register('section')} placeholder="SBIT-3G" error={errors.section?.message} />
+                <Input label="Section" {...register('section')} placeholder="SBIT-4G" error={errors.section?.message} />
               </div>
             )}
 
             {(studentRole === 'Presenter' || studentRole === 'Poster') && (
               <div className="space-y-4 animate-in fade-in zoom-in-95 duration-500">
+                <Input 
+                  label="Student ID" 
+                  {...register('studentId', { onChange: handleStudentIdChange })} 
+                  placeholder="00-0000" 
+                  maxLength={7}
+                  error={errors.studentId?.message} 
+                />
                 <Input label="Representative Name" {...register('representativeName')} error={errors.representativeName?.message} />
                 <Input label="Group Number" {...register('groupNumber')} error={errors.groupNumber?.message} />
-                <Input label="Section" {...register('section')} placeholder="SBIT-3G" error={errors.section?.message} />
+                <Input label="Section" {...register('section')} placeholder="SBIT-4G" error={errors.section?.message} />
                 <Input label="Capstone Title" {...register('capstoneTitle')} error={errors.capstoneTitle?.message} />
               </div>
             )}
