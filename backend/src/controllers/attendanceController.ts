@@ -13,7 +13,7 @@ export const submitAttendance = async (req: Request, res: Response) => {
       .from('sessions')
       .select('*')
       .eq('qr_access_token', token)
-      .single();
+      .maybeSingle();
 
     sessionData = sessionByToken;
 
@@ -27,12 +27,14 @@ export const submitAttendance = async (req: Request, res: Response) => {
       }
 
       if (searchType) {
+        // Use order and limit to ensure we get the most recent one if duplicates exist
         const { data: sessionByTypeName } = await supabase
           .from('sessions')
           .select('*')
           .eq('session_type', searchType)
+          .order('created_at', { ascending: false })
           .limit(1)
-          .single();
+          .maybeSingle();
         
         sessionData = sessionByTypeName;
       }
@@ -64,7 +66,7 @@ export const submitAttendance = async (req: Request, res: Response) => {
       query = query.eq('full_name', name);
     }
 
-    const { data: registration, error: regError } = await query.single();
+    const { data: registration, error: regError } = await query.maybeSingle();
 
     if (regError || !registration) {
       return res.status(404).json({
@@ -96,14 +98,15 @@ export const submitAttendance = async (req: Request, res: Response) => {
 
     return res.status(201).json({
       message: 'Attendance recorded successfully',
-      session: session.name
+      session: session.session_type || 'Session'
     });
 
   } catch (error: any) {
     console.error('Attendance Error:', error);
     return res.status(500).json({
       error: 'Internal Server Error',
-      message: error.message
+      message: error.message || 'An unknown error occurred',
+      details: error
     });
   }
 };
