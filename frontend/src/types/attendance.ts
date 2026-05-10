@@ -2,6 +2,8 @@ export type AttendanceCategory = 'student' | 'employee' | 'guest';
 
 export interface AttendanceBase {
   category: AttendanceCategory;
+  session?: 'am' | 'pm';
+  token?: string;
   timestamp?: string;
 }
 

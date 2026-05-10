@@ -55,6 +55,17 @@ const GuestRegistration: React.FC = () => {
     );
   }
 
+  // Handle Capacity Reached professional UI
+  if (error === 'Registration Capacity Reached') {
+    return (
+      <SubmissionStatus 
+        type="capacity-full"
+        title="Registration Capacity Reached"
+        message="The registration limit for this participant category has already been reached. We appreciate your interest in participating. Please contact the event organizer for further assistance."
+      />
+    );
+  }
+
   return (
     <div className="glass-card p-6 md:p-8">
       <div className="mb-6">

@@ -2,23 +2,42 @@ import { Request, Response } from 'express';
 import { supabase } from '../supabase/client.js';
 
 export const submitAttendance = async (req: Request, res: Response) => {
-  const { studentId, name, category, token } = req.body;
+  const { studentId, name, category, token, session: sessionType } = req.body;
 
   try {
     // 1. Validate Token & Session
-    // We look for a session that has this active QR token
-    const { data: session, error: sessionError } = await supabase
+    let sessionData = null;
+
+    // Try lookup by token first
+    const { data: sessionByToken } = await supabase
       .from('sessions')
       .select('*')
       .eq('qr_access_token', token)
       .single();
 
-    if (sessionError || !session) {
+    sessionData = sessionByToken;
+
+    // Fallback: If not found by token, try to find by name based on the sessionType (AM/PM)
+    if (!sessionData && sessionType) {
+      const searchName = sessionType.toUpperCase() === 'AM' ? 'AM Session' : 'PM Session';
+      const { data: sessionByName } = await supabase
+        .from('sessions')
+        .select('*')
+        .ilike('name', `%${searchName}%`)
+        .limit(1)
+        .single();
+      
+      sessionData = sessionByName;
+    }
+
+    if (!sessionData) {
       return res.status(403).json({
         error: 'Session Access Denied',
         message: 'This session is either closed or requires a valid security token.'
       });
     }
+
+    const session = sessionData;
 
     // 2. Find the Registration
     let query = supabase.from('registrations').select('id');
