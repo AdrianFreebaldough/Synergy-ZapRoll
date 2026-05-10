@@ -2,13 +2,14 @@ export const SECURE_TOKENS = {
   // Registration Tokens
   REGISTRATION: {
     STUDENT: 'a7c9f21be81d44aa',
+    STUDENT_WALK_IN: 'w1a2l3k4i5n6s7t',
     EMPLOYEE: 'b2e1f41ce81d55bb',
     GUEST: 'c3d4e51be92e66cc'
   },
   // Attendance Tokens
   ATTENDANCE: {
     STUDENT_AM: 'f81ca2d771d91a',
-    STUDENT_PM: 'g92db3e882e02b', 
+    STUDENT_PM: 'g92db3e882e02b',
     EMPLOYEE: 'd3f4b5e61c7d2a',
     GUEST: 'e5f6g7h81i9j3b'
   },

@@ -8,104 +8,119 @@ export const submitAttendance = async (req: Request, res: Response) => {
     // 1. Validate Token & Session
     let sessionData = null;
 
-    // Try lookup by token first
+    // 1. Resolve Session (Flexible Lookup)
+    let session = null;
+
+    // Try token first
     const { data: sessionByToken } = await supabase
       .from('sessions')
       .select('*')
       .eq('qr_access_token', token)
       .maybeSingle();
 
-    sessionData = sessionByToken;
-
-    // Fallback: If not found by token, try to find by session_type based on the sessionType (AM/PM)
-    if (!sessionData) {
-      let searchType = '';
-      if (category === 'student') {
-        searchType = sessionType?.toUpperCase() === 'AM' ? 'am-reg' : 'pm-reg';
-      } else if (category === 'employee') {
-        searchType = 'employee-reg';
-      }
-
-      if (searchType) {
-        // Use order and limit to ensure we get the most recent one if duplicates exist
-        const { data: sessionByTypeName } = await supabase
-          .from('sessions')
-          .select('*')
-          .eq('session_type', searchType)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        
-        sessionData = sessionByTypeName;
-      }
-    }
-
-    if (!sessionData) {
-      return res.status(403).json({
-        error: 'Session Access Denied',
-        message: 'This session is either closed or requires a valid security token.'
-      });
-    }
-
-    const session = sessionData;
-
-    // 1.1 Toggle Check (is_open column from database)
-    if (session.is_open === false) {
-      return res.status(403).json({
-        error: 'Attendance Closed',
-        message: `Attendance for the "${session.session_type}" is currently closed. Please wait for the organizer to open the session.`
-      });
-    }
-
-    // 2. Find the Registration
-    let query = supabase.from('registrations').select('id');
-
-    if (category === 'student') {
-      query = query.eq('external_id', studentId);
+    if (sessionByToken) {
+      session = sessionByToken;
     } else {
-      query = query.eq('full_name', name);
+      // Fallback: Smart session lookup
+      const isAM = sessionType?.toUpperCase() === 'AM';
+      const isEmployee = category === 'employee';
+      
+      let searchPattern = '%am%';
+      if (isEmployee) {
+        searchPattern = '%employee%';
+      } else if (sessionType?.toUpperCase() === 'PM') {
+        searchPattern = '%pm%';
+      }
+      
+      const { data: sessionByMatch } = await supabase
+        .from('sessions')
+        .select('*')
+        .ilike('session_type', searchPattern)
+        .eq('is_open', true)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      
+      session = sessionByMatch;
     }
 
-    const { data: registration, error: regError } = await query.maybeSingle();
+    if (!session || !session.is_open) {
+      return res.status(403).json({
+        error: 'Session Not Active',
+        message: `No active ${category?.toUpperCase()} session was found. Please ensure the session is toggled to "Open" in the database.`
+      });
+    }
+
+    // 2. Resolve Participant/Registration
+    // ... (rest of step 2 stays the same) ...
+    let regQuery = supabase.from('registrations').select('*');
+    if (category === 'student') {
+      regQuery = regQuery.eq('external_id', studentId);
+    } else {
+      regQuery = regQuery.eq('full_name', name);
+    }
+
+    const { data: registration, error: regError } = await regQuery.maybeSingle();
 
     if (regError || !registration) {
       return res.status(404).json({
         error: 'Participant Not Registered',
-        message: 'We could not find a registration matching these details. Please register first.'
+        message: 'We could not find a registration matching these details.'
       });
     }
 
-    // 3. Record Attendance
-    const { error: attendError } = await supabase
-      .from('attendance')
-      .insert([
-        {
-          registration_id: registration.id,
-          session_id: session.id,
-          scanned_at: new Date().toISOString()
-        }
-      ]);
+    // 3. Record Attendance (Robust Upsert Logic)
+    const typeLower = (session.session_type || '').toLowerCase();
+    // PRIORITIZE employee field first, then PM, then AM
+    const sessionTypeField = typeLower.includes('employee') ? 'employee_scanned_at' : 
+                             typeLower.includes('pm') ? 'pm_scanned_at' : 
+                             'am_scanned_at';
 
-    if (attendError) {
-      if (attendError.code === '23505') { // Unique violation
-        return res.status(400).json({
-          error: 'Already Attended',
-          message: 'Your attendance has already been recorded for this session.'
-        });
-      }
-      throw attendError;
+    const now = new Date().toISOString();
+
+    // Check for existing record to prevent duplicates in the SAME session
+    const { data: existing } = await supabase
+      .from('attendance')
+      .select('*')
+      .eq('participant_id', registration.id)
+      .maybeSingle();
+
+    if (existing && existing[sessionTypeField]) {
+      return res.status(400).json({
+        error: 'Already Attended',
+        message: `Your attendance for the ${session.session_type} is already recorded.`
+      });
+    }
+
+    // Upsert the record (Match by participant_id)
+    const { error: upsertError } = await supabase
+      .from('attendance')
+      .upsert({
+        id: existing?.id, // Use existing ID if we found one
+        participant_id: registration.id,
+        registration_id: registration.id,
+        event_id: session.event_id || registration.event_id || existing?.event_id || null,
+        [sessionTypeField]: now
+      });
+
+    if (upsertError) {
+      console.error('Upsert Error:', upsertError);
+      throw upsertError;
     }
 
     return res.status(201).json({
       message: 'Attendance recorded successfully',
-      session: session.session_type || 'Session'
+      session: session.session_type,
+      column: sessionTypeField
     });
 
   } catch (error: any) {
     console.error('Attendance Error:', error);
+    // Move the specific error message to the 'error' field so it shows in the frontend UI
+    const displayError = error.message || 'Internal Server Error';
     return res.status(500).json({
-      error: 'Internal Server Error',
-      message: error.message || 'An unknown error occurred',
+      error: `Server Error: ${displayError}`,
+      message: displayError,
       details: error
     });
   }
