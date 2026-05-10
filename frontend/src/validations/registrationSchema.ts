@@ -33,22 +33,64 @@ export const studentSchema = baseSchema.extend({
   representativeName: z.string().min(2, 'Representative name is required').optional(),
   groupNumber: z.string().min(1, 'Group number is required').optional(),
   capstoneTitle: z.string().min(2, 'Capstone title is required').optional(),
-}).refine((data) => {
-  if (data.yearLevel === '3rd Year') {
-    return !!data.studentId && !!data.name && !!data.section;
+}).superRefine((data, ctx) => {
+  // 1. Year Level & Section Validation
+  if (data.yearLevel === '3rd Year' && data.section && !data.section.includes('3')) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Section must match your year level (e.g., SBIT-3G)",
+      path: ["section"],
+    });
   }
+  if (data.yearLevel === '4th Year' && data.section && !data.section.includes('4')) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Section must match your year level (e.g., SBIT-4A)",
+      path: ["section"],
+    });
+  }
+
+  // 1.1 ID Batch Validation (e.g. 23-1234)
+  if (data.studentId && data.studentId.includes('-')) {
+    const batch = parseInt(data.studentId.split('-')[0], 10);
+    if (!isNaN(batch)) {
+      if (data.yearLevel === '4th Year' && batch > 22) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "4th Year IDs must start with 22 or below",
+          path: ["studentId"],
+        });
+      }
+      if (data.yearLevel === '3rd Year' && batch > 23) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "3rd Year IDs must start with 23 or below",
+          path: ["studentId"],
+        });
+      }
+    }
+  }
+
+  // 2. Conditional Role Fields Validation
+  if (data.yearLevel === '3rd Year') {
+    if (!data.studentId) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "ID is required", path: ["studentId"] });
+    if (!data.name) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Name is required", path: ["name"] });
+    if (!data.section) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Section is required", path: ["section"] });
+  }
+
   if (data.yearLevel === '4th Year') {
     if (data.studentRole === 'Participant') {
-      return !!data.studentId && !!data.name && !!data.section;
+      if (!data.studentId) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "ID is required", path: ["studentId"] });
+      if (!data.name) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Name is required", path: ["name"] });
+      if (!data.section) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Section is required", path: ["section"] });
     }
     if (data.studentRole === 'Presenter' || data.studentRole === 'Poster') {
-      return !!data.representativeName && !!data.groupNumber && !!data.section && !!data.capstoneTitle;
+      if (!data.representativeName) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Required", path: ["representativeName"] });
+      if (!data.groupNumber) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Required", path: ["groupNumber"] });
+      if (!data.section) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Required", path: ["section"] });
+      if (!data.capstoneTitle) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Required", path: ["capstoneTitle"] });
     }
   }
-  return true;
-}, {
-  message: "Required fields are missing for the selected role",
-  path: ["studentRole"],
 });
 
 export type EmployeeFormData = z.infer<typeof employeeSchema>;

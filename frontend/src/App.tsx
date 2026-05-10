@@ -4,7 +4,9 @@ import MainLayout from './layouts/MainLayout';
 import StudentRegistration from './pages/StudentRegistration';
 import WalkInRegistration from './pages/WalkInRegistration';
 import EmployeeRegistration from './pages/EmployeeRegistration';
+import EmployeeWalkIn from './pages/EmployeeWalkIn';
 import GuestRegistration from './pages/GuestRegistration';
+import GuestWalkIn from './pages/GuestWalkIn';
 import ParticipantRegistration from './pages/ParticipantRegistration';
 import AttendanceEntry from './pages/attendance/AttendanceEntry';
 import SurveyPage from './pages/SurveyPage';
@@ -20,7 +22,9 @@ export const RegistrationRouter: React.FC<{ subType?: string }> = ({ subType }) 
     case 'STUDENT': return <StudentRegistration />;
     case 'STUDENT_WALK_IN': return <WalkInRegistration />;
     case 'EMPLOYEE': return <EmployeeRegistration />;
+    case 'EMPLOYEE_WALK_IN': return <EmployeeWalkIn />;
     case 'GUEST': return <GuestRegistration />;
+    case 'GUEST_WALK_IN': return <GuestWalkIn />;
     case 'PARTICIPANT': return <ParticipantRegistration />;
     default: return <Navigate to="/invalid-link" replace />;
   }

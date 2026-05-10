@@ -4,7 +4,9 @@ export const SECURE_TOKENS = {
     STUDENT: 'a7c9f21be81d44aa',
     STUDENT_WALK_IN: 'w1a2l3k4i5n6s7t',
     EMPLOYEE: 'b2e1f41ce81d55bb',
-    GUEST: 'c3d4e51be92e66cc'
+    EMPLOYEE_WALK_IN: 'e9r8t7y6u5i4o3p',
+    GUEST: 'c3d4e51be92e66cc',
+    GUEST_WALK_IN: 'g1h2j3k4l5m6n7b'
   },
   // Attendance Tokens
   ATTENDANCE: {
