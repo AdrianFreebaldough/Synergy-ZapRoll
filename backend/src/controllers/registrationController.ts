@@ -34,7 +34,7 @@ export const registerEntry = async (req: Request, res: Response) => {
 
       if (quotaError || !quota) {
         console.error('Quota Error Details:', quotaError);
-        
+
         // Help the user find a valid ID if this one failed
         const { data: availableQuotas } = await supabase
           .from('event_quotas')
@@ -43,8 +43,8 @@ export const registerEntry = async (req: Request, res: Response) => {
 
         const availableList = availableQuotas?.map(q => `${q.category}: ${q.id}`).join('\n') || 'None found';
 
-        const detailedError = quotaError 
-          ? `Invalid Quota: ${quotaError.message}` 
+        const detailedError = quotaError
+          ? `Invalid Quota: ${quotaError.message}`
           : `Invalid Quota: The ID "${quotaId}" was not found in the database.`;
 
         return res.status(400).json({
@@ -68,7 +68,7 @@ export const registerEntry = async (req: Request, res: Response) => {
       if (countError) throw countError;
 
       if (count !== null && count >= quota.capacity) {
-        return res.status(423).json({ 
+        return res.status(423).json({
           error: 'Registration Capacity Reached',
           message: `The registration limit for ${quota.category} has already been reached.`,
           subtext: 'We appreciate your interest in participating.'
@@ -97,12 +97,12 @@ export const registerEntry = async (req: Request, res: Response) => {
     if (existingReg) {
       const isEmailConflict = email && existingReg.email === email;
       const isIdConflict = externalId && existingReg.external_id === externalId;
-      
+
       if (isEmailConflict || isIdConflict) {
         return res.status(400).json({
           error: 'Already Registered',
-          message: isEmailConflict 
-            ? `The email "${email}" is already registered for this event.` 
+          message: isEmailConflict
+            ? `The email "${email}" is already registered for this event.`
             : `The ID "${externalId}" is already registered for this event.`
         });
       }
@@ -121,7 +121,7 @@ export const registerEntry = async (req: Request, res: Response) => {
       .from('registrations')
       .insert([
         {
-          event_id: targetEventId, 
+          event_id: targetEventId,
           full_name: finalName,
           email: email || null,
           external_id: externalId,
@@ -146,48 +146,49 @@ export const registerEntry = async (req: Request, res: Response) => {
 
     const registration = result[0];
 
-    // 5. Automatic Attendance for Walk-ins
-    // If this is a walk-in, we automatically check them into the current active session
+    // 5. Automatic Attendance for Walk-ins (Mandatory for walk-in registrations)
     if (req.body.isWalkIn) {
-      try {
-        const now = new Date();
-        // Determine session type based on current time (AM before 12 PM, PM after 12 PM)
-        let searchType = 'am-reg';
-        if (category === 'student' && now.getHours() >= 12) {
-          searchType = 'pm-reg';
-        } else if (category === 'employee') {
-          searchType = 'employee-reg';
-        }
+      const now = new Date();
+      const isAfternoon = now.getHours() >= 12;
+      let searchPattern = isAfternoon ? '%pm%' : '%am%';
+      if (category === 'employee') searchPattern = '%employee%';
 
-        // Find the open session for this type
-        const { data: session } = await supabase
-          .from('sessions')
-          .select('*')
-          .eq('session_type', searchType)
-          .eq('is_open', true)
-          .maybeSingle();
+      // Find the correct open session
+      const { data: session, error: sessionLookupError } = await supabase
+        .from('sessions')
+        .select('*')
+        .ilike('session_type', searchPattern)
+        .eq('is_open', true)
+        .maybeSingle();
 
-        if (session) {
-          const sessionTypeField = 
-            session.session_type === 'am-reg' ? 'am_scanned_at' : 
-            session.session_type === 'pm-reg' ? 'pm_scanned_at' : 
-            'employee_scanned_at';
+      if (sessionLookupError) throw new Error(`Session Lookup Failed: ${sessionLookupError.message}`);
+      
+      if (!session) {
+        throw new Error(`No open ${isAfternoon ? 'PM' : 'AM'} session was found for walk-in check-in.`);
+      }
 
-          await supabase.from('attendance').insert([{
-            registration_id: registration.id,
-            event_id: targetEventId,
-            participant_id: registration.id,
-            [sessionTypeField]: now.toISOString()
-          }]);
-        }
-      } catch (attendError) {
-        console.error('Auto-Attendance Error (Non-Critical):', attendError);
-        // We don't fail the registration if auto-attendance fails, but we log it
+      const typeLower = (session.session_type || '').toLowerCase();
+      const sessionTypeField = 
+        typeLower.includes('employee') ? 'employee_scanned_at' : 
+        typeLower.includes('pm') ? 'pm_scanned_at' : 
+        'am_scanned_at';
+
+      const { error: attendError } = await supabase
+        .from('attendance')
+        .insert([{
+          participant_id: registration.id,
+          registration_id: registration.id,
+          event_id: targetEventId,
+          [sessionTypeField]: now.toISOString()
+        }]);
+
+      if (attendError) {
+        throw new Error(`Attendance Recording Failed: ${attendError.message}`);
       }
     }
 
     return res.status(201).json({
-      message: req.body.isWalkIn 
+      message: req.body.isWalkIn
         ? `${category} walk-in registered and checked-in successfully`
         : `${category} registered successfully`,
       data: registration,
