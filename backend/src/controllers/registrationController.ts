@@ -82,6 +82,32 @@ export const registerEntry = async (req: Request, res: Response) => {
     // 2. Extract external_id (e.g. Student ID)
     const externalId = otherData.studentId || null;
 
+    // 2.1 Duplicate Check (Email & ID)
+    // We check if this email OR student ID is already registered for THIS event
+    const { data: existingReg } = await supabase
+      .from('registrations')
+      .select('id, email, external_id')
+      .eq('event_id', targetEventId)
+      .filter('id', 'not.is', null) // Dummy filter to start the query
+      .or(
+        `email.eq."${email || '___NULL___'}",external_id.eq."${externalId || '___NULL___'}"`
+      )
+      .maybeSingle();
+
+    if (existingReg) {
+      const isEmailConflict = email && existingReg.email === email;
+      const isIdConflict = externalId && existingReg.external_id === externalId;
+      
+      if (isEmailConflict || isIdConflict) {
+        return res.status(400).json({
+          error: 'Already Registered',
+          message: isEmailConflict 
+            ? `The email "${email}" is already registered for this event.` 
+            : `The ID "${externalId}" is already registered for this event.`
+        });
+      }
+    }
+
     // 3. Bundle metadata
     const metadata = {
       ...otherData,

@@ -1,6 +1,7 @@
 import React from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useSearchParams } from 'react-router-dom';
 import { studentSchema, StudentFormData } from '../validations/registrationSchema';
 import { useSubmission } from '../hooks/useSubmission';
 import Input from '../components/ui/Input';
@@ -10,9 +11,12 @@ import { submitRegistration } from '../services/registrationService';
 import SubmissionStatus from '../components/ui/SubmissionStatus';
 
 const WalkInRegistration: React.FC = () => {
-  // Pass isWalkIn flag to automatically trigger attendance in backend
+  const [searchParams] = useSearchParams();
+  const quotaId = searchParams.get('quota_id');
+
+  // Pass isWalkIn flag and quotaId to automatically trigger attendance in backend
   const { execute: submitData, isSubmitting, error, success, hasAlreadySubmitted } = useSubmission(
-    (data: StudentFormData) => submitRegistration('student', { ...data, isWalkIn: true } as any)
+    (data: StudentFormData) => submitRegistration('student', { ...data, quotaId, isWalkIn: true } as any)
   );
   
   const {
