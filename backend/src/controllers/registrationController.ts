@@ -86,7 +86,8 @@ export const registerEntry = async (req: Request, res: Response) => {
     const metadata = {
       ...otherData,
       registered_category: category,
-      registration_source: 'web_portal'
+      registration_source: req.body.isWalkIn ? 'on_site' : 'web_portal',
+      reg_type: req.body.isWalkIn ? 'walk-in' : 'pre-reg'
     };
 
     // 4. Insert into the unified registrations table
@@ -94,13 +95,14 @@ export const registerEntry = async (req: Request, res: Response) => {
       .from('registrations')
       .insert([
         {
-          event_id: targetEventId, // Use the resolved event ID
+          event_id: targetEventId, 
           full_name: finalName,
           email: email || null,
           external_id: externalId,
           quota_id: quotaId || null,
           metadata: metadata,
           status: 'registered',
+          reg_type: req.body.isWalkIn ? 'walk-in' : 'pre-reg',
           created_at: new Date().toISOString()
         }
       ])
@@ -116,9 +118,54 @@ export const registerEntry = async (req: Request, res: Response) => {
       throw error;
     }
 
+    const registration = result[0];
+
+    // 5. Automatic Attendance for Walk-ins
+    // If this is a walk-in, we automatically check them into the current active session
+    if (req.body.isWalkIn) {
+      try {
+        const now = new Date();
+        // Determine session type based on current time (AM before 12 PM, PM after 12 PM)
+        let searchType = 'am-reg';
+        if (category === 'student' && now.getHours() >= 12) {
+          searchType = 'pm-reg';
+        } else if (category === 'employee') {
+          searchType = 'employee-reg';
+        }
+
+        // Find the open session for this type
+        const { data: session } = await supabase
+          .from('sessions')
+          .select('*')
+          .eq('session_type', searchType)
+          .eq('is_open', true)
+          .maybeSingle();
+
+        if (session) {
+          const sessionTypeField = 
+            session.session_type === 'am-reg' ? 'am_scanned_at' : 
+            session.session_type === 'pm-reg' ? 'pm_scanned_at' : 
+            'employee_scanned_at';
+
+          await supabase.from('attendance').insert([{
+            registration_id: registration.id,
+            event_id: targetEventId,
+            participant_id: registration.id,
+            [sessionTypeField]: now.toISOString()
+          }]);
+        }
+      } catch (attendError) {
+        console.error('Auto-Attendance Error (Non-Critical):', attendError);
+        // We don't fail the registration if auto-attendance fails, but we log it
+      }
+    }
+
     return res.status(201).json({
-      message: `${category} registered successfully`,
-      data: result[0]
+      message: req.body.isWalkIn 
+        ? `${category} walk-in registered and checked-in successfully`
+        : `${category} registered successfully`,
+      data: registration,
+      isWalkIn: !!req.body.isWalkIn
     });
 
   } catch (error: any) {

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useParams } from 'react-router-dom';
 import MainLayout from './layouts/MainLayout';
 import StudentRegistration from './pages/StudentRegistration';
+import WalkInRegistration from './pages/WalkInRegistration';
 import EmployeeRegistration from './pages/EmployeeRegistration';
 import GuestRegistration from './pages/GuestRegistration';
 import ParticipantRegistration from './pages/ParticipantRegistration';
@@ -17,6 +18,7 @@ import { verifyRouteToken } from './services/tokenService';
 export const RegistrationRouter: React.FC<{ subType?: string }> = ({ subType }) => {
   switch (subType) {
     case 'STUDENT': return <StudentRegistration />;
+    case 'STUDENT_WALK_IN': return <WalkInRegistration />;
     case 'EMPLOYEE': return <EmployeeRegistration />;
     case 'GUEST': return <GuestRegistration />;
     case 'PARTICIPANT': return <ParticipantRegistration />;
