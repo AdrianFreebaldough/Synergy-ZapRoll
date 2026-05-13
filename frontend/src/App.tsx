@@ -10,6 +10,7 @@ import GuestWalkIn from './pages/GuestWalkIn';
 import ParticipantRegistration from './pages/ParticipantRegistration';
 import AttendanceEntry from './pages/attendance/AttendanceEntry';
 import SurveyPage from './pages/SurveyPage';
+import EvaluationPage from './pages/EvaluationPage';
 import NotFound from './pages/NotFound';
 import InvalidLink from './pages/error/InvalidLink';
 import { verifyRouteToken } from './services/tokenService';
@@ -110,6 +111,9 @@ function App() {
               <SurveyPage />
             </TokenGuard>
           } />
+
+          {/* Event Evaluation — accessed via QR code from mobile app */}
+          <Route path="/evaluate/:token" element={<EvaluationPage />} />
 
           <Route path="/invalid-link" element={<InvalidLink />} />
           <Route path="/404" element={<NotFound />} />
