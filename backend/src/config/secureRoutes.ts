@@ -17,7 +17,9 @@ export const SECURE_TOKENS = {
   },
   // Survey Tokens
   SURVEY: {
-    GENERAL: 'c71d8ea29a1fbc42'
+    GENERAL: 'c71d8ea29a1fbc42',
+    EVALUATION_AM: 'f82da3e882e02b',
+    EVALUATION_PM: 'g93eb4f993f13c'
   }
 };
 

@@ -5,6 +5,7 @@ import registrationRoutes from './routes/registrationRoutes.js';
 import surveyRoutes from './routes/surveyRoutes.js';
 import attendanceRoutes from './routes/attendanceRoutes.js';
 import tokenRoutes from './routes/tokenRoutes.js';
+import eventRoutes from './routes/eventRoutes.js';
 
 dotenv.config();
 
@@ -20,6 +21,7 @@ app.use('/api/register', registrationRoutes);
 app.use('/api/surveys', surveyRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/tokens', tokenRoutes);
+app.use('/api/events', eventRoutes);
 
 // Health Check
 app.get('/health', (req, res) => {

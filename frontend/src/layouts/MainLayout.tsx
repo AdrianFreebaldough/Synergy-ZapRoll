@@ -35,7 +35,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       </header>
 
       {/* Main Content Area */}
-      <main className="relative z-10 w-full px-4 pb-16 max-w-[480px]">
+      <main className="relative z-10 w-full px-4 pb-16 max-w-[740px]">
         <div className="animate-in slide-in-from-bottom-4 duration-1000 fill-mode-both">
           {children}
         </div>
