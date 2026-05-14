@@ -121,7 +121,7 @@ export const verifyAttendance = async (req: Request, res: Response) => {
     }
 
     // 4. Check if the student was scanned for the relevant session
-    const wasPresent = !!attendance[sessionField];
+    const wasPresent = !!(attendance as any)[sessionField];
 
     if (!wasPresent) {
       return res.status(403).json({
@@ -130,7 +130,27 @@ export const verifyAttendance = async (req: Request, res: Response) => {
       });
     }
 
-    // 5. Verified! Return registration info
+    // 5. NEW: Check if they already submitted for this session
+    const { data: existingResponse, error: responseError } = await supabase
+      .from('evaluation_responses')
+      .select('am_eval_submitted_at, pm_eval_submitted_at')
+      .eq('registration_id', registration.id)
+      .maybeSingle();
+
+    if (responseError) {
+      console.error('Submission Check Error:', responseError);
+    }
+
+    const submittedAtField = sessionLabel.toLowerCase() === 'pm' ? 'pm_eval_submitted_at' : 'am_eval_submitted_at';
+    
+    if (existingResponse && (existingResponse as any)[submittedAtField]) {
+      return res.status(403).json({
+        error: 'Already Submitted',
+        message: `You have already submitted your evaluation for the ${sessionLabel} session.`
+      });
+    }
+
+    // 6. Verified! Return registration info
     return res.status(200).json({
       verified: true,
       registration_id: registration.id,
@@ -178,7 +198,26 @@ export const submitEvaluationResponse = async (req: Request, res: Response) => {
     const submittedAtField = sessionLabel === 'pm' ? 'pm_eval_submitted_at' : 'am_eval_submitted_at';
     const responsesField = sessionLabel === 'pm' ? 'pm_eval_responses' : 'am_eval_responses';
 
-    // Record or update the evaluation (Upsert logic like attendance)
+    // 1. Check if already submitted for this specific session
+    const { data: existing, error: checkError } = await supabase
+      .from('evaluation_responses')
+      .select('am_eval_submitted_at, pm_eval_submitted_at')
+      .eq('template_id', template_id)
+      .eq('registration_id', registration_id)
+      .maybeSingle();
+
+    if (checkError) {
+      console.error('Submission Check Error:', checkError);
+    }
+
+    if (existing && (existing as any)[submittedAtField]) {
+      return res.status(400).json({
+        error: 'Already Submitted',
+        message: `You have already submitted an evaluation for the ${sessionLabel.toUpperCase()} session.`
+      });
+    }
+
+    // 2. Record or update the evaluation (Upsert logic like attendance)
     const { data: result, error } = await supabase
       .from('evaluation_responses')
       .upsert({
