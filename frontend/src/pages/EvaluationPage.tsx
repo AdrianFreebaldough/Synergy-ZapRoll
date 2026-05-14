@@ -101,7 +101,15 @@ const EvaluationPage: React.FC = () => {
       setVerifiedSession(result.session);
     } catch (err: any) {
       const errData = err.response?.data;
-      setVerifyError(errData?.message || errData?.error || 'Verification failed');
+      const msg = errData?.message || errData?.error || 'Verification failed';
+      
+      // If backend says already submitted, block them immediately
+      if (msg.toLowerCase().includes('already submitted')) {
+        setHasAlreadySubmitted(true);
+        localStorage.setItem(`submitted_${persistenceKey}`, 'true');
+      } else {
+        setVerifyError(msg);
+      }
     } finally {
       setIsVerifying(false);
     }
@@ -188,8 +196,8 @@ const EvaluationPage: React.FC = () => {
       <div className="max-w-[720px] mx-auto pb-12">
         <SubmissionStatus
           type="already-submitted"
-          title="Response Already Submitted"
-          message="Our system has already received your feedback for this evaluation. Thank you for your participation!"
+          title={`Response Already Submitted — ${sessionLabel.toUpperCase()}`}
+          message={`Our system has already received your feedback for the ${sessionLabel.toUpperCase()} session. Thank you for your participation!`}
         />
       </div>
     );
@@ -200,8 +208,8 @@ const EvaluationPage: React.FC = () => {
       <div className="max-w-[720px] mx-auto pb-12">
         <SubmissionStatus
           type="success"
-          title="Evaluation Submitted"
-          message="Thank you for sharing your feedback! Your response has been securely recorded."
+          title={`Evaluation Submitted — ${sessionLabel.toUpperCase()}`}
+          message={`Thank you for sharing your feedback! Your response for the ${sessionLabel.toUpperCase()} session has been securely recorded.`}
         />
       </div>
     );
@@ -256,8 +264,11 @@ const EvaluationPage: React.FC = () => {
         <div className="glass-card overflow-hidden border-t-8 border-t-app-primary shadow-2xl">
           {/* Header */}
           <div className="p-6 md:p-8 border-b border-white/[0.04] bg-white/[0.01]">
-            <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight leading-tight">
+            <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight leading-tight flex items-center gap-3">
               Event Evaluation
+              <span className="px-2.5 py-0.5 bg-app-primary/20 text-app-primary text-[10px] uppercase tracking-widest rounded-full border border-app-primary/20 font-bold">
+                {sessionLabel} Session
+              </span>
             </h1>
             <p className="mt-2 text-app-text-secondary text-sm leading-relaxed opacity-80">
               Please verify your identity to proceed with the evaluation form.
@@ -381,8 +392,11 @@ const EvaluationPage: React.FC = () => {
           {/* ── Page Header ── */}
           <div className="p-6 md:p-8 border-b border-white/[0.04] bg-white/[0.01]">
             <div className="flex items-center justify-between mb-1">
-              <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight leading-tight">
+              <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight leading-tight flex items-center gap-3">
                 {currentPage.title}
+                <span className="px-2.5 py-0.5 bg-app-primary/20 text-app-primary text-[10px] uppercase tracking-widest rounded-full border border-app-primary/20 font-bold">
+                  {verifiedSession}
+                </span>
               </h1>
               {totalPages > 1 && (
                 <span className="text-[10px] text-app-text-muted font-bold uppercase tracking-widest shrink-0 ml-4">
