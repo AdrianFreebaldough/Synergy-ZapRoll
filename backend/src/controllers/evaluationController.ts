@@ -2,22 +2,38 @@ import { Request, Response } from 'express';
 import { supabase } from '../supabase/client.js';
 
 /**
- * GET /api/events/:eventId/evaluation-template
+ * GET /api/events/evaluation/template?session=am|pm
+ * GET /api/events/:eventId/evaluation-template?session=am|pm
  * 
- * Fetches the active evaluation template for a specific event.
- * This is the endpoint the QR code triggers when scanned.
+ * Fetches the active evaluation template for a specific session.
+ * The QR code URL determines which session template to load.
+ * 
+ * session=am  → session_type = 'am-eval'
+ * session=pm  → session_type = 'pm-eval'
+ * (no session) → falls back to the most recent active template
  */
 export const getEvaluationTemplate = async (req: Request, res: Response) => {
   const { eventId } = req.params;
+  const { session } = req.query as { session?: string };
+
+  // Map the short session name to the DB session_type value
+  const sessionType = session === 'am' ? 'am-eval' : session === 'pm' ? 'pm-eval' : null;
+
+  console.log(`[Template Fetch] session="${session}" → session_type="${sessionType ?? 'any'}"`);
 
   try {
-    const { data: template, error } = await supabase
+    let query = supabase
       .from('evaluation_templates')
       .select('*')
       .eq('is_active', true)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .order('created_at', { ascending: false });
+
+    // If a session was specified, filter to the matching session_type row
+    if (sessionType) {
+      query = query.eq('session_type', sessionType);
+    }
+
+    const { data: template, error } = await query.limit(1).maybeSingle();
 
     if (error) {
       console.error('Template Fetch Error:', error);
@@ -27,7 +43,7 @@ export const getEvaluationTemplate = async (req: Request, res: Response) => {
     if (!template) {
       return res.status(404).json({
         error: 'No Active Evaluation',
-        message: 'No evaluation form is currently available for this event.'
+        message: `No evaluation form is currently available${sessionType ? ` for the ${session?.toUpperCase()} session` : ''}.`
       });
     }
 

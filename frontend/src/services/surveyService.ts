@@ -1,13 +1,16 @@
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5002/api';
 
 /**
- * Fetches the active evaluation template (Smart Lookup).
- * Endpoint: GET /api/events/evaluation/template
+ * Fetches the active evaluation template for the given session.
+ * Endpoint: GET /api/events/evaluation/template?session=am|pm
+ * 
+ * @param session 'am' | 'pm' — determines which template row to load
  */
-export const fetchEvaluationTemplate = async () => {
-  const response = await axios.get(`${API_URL}/events/evaluation/template`);
+export const fetchEvaluationTemplate = async (session?: string) => {
+  const params = session ? `?session=${session}` : '';
+  const response = await axios.get(`${API_URL}/events/evaluation/template${params}`);
   return response.data;
 };
 

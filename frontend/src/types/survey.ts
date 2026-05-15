@@ -68,6 +68,8 @@ export interface EvaluationTemplate {
   title?: string;
   questions: EvalPage[];
   is_active: boolean;
+  /** DB column: 'am-eval' | 'pm-eval' — identifies which session this template belongs to */
+  session_type?: 'am-eval' | 'pm-eval';
   created_at?: string;
 }
 

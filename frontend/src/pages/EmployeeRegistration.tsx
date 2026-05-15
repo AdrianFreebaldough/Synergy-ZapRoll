@@ -17,7 +17,7 @@ const EmployeeRegistration: React.FC = () => {
   const { execute: submitData, isSubmitting, error, success, hasAlreadySubmitted } = useSubmission(
     (data: EmployeeFormData) => submitRegistration('employee', { ...data, quotaId } as any)
   );
-  
+
   const {
     register,
     handleSubmit,
@@ -37,7 +37,7 @@ const EmployeeRegistration: React.FC = () => {
 
   if (hasAlreadySubmitted) {
     return (
-      <SubmissionStatus 
+      <SubmissionStatus
         type="already-submitted"
         title="Already Registered"
         message="Our system has already received your employee registration. Thank you for your service!"
@@ -47,7 +47,7 @@ const EmployeeRegistration: React.FC = () => {
 
   if (success) {
     return (
-      <SubmissionStatus 
+      <SubmissionStatus
         type="success"
         title="Registration Confirmed"
         message="Your faculty/staff registration has been successfully recorded. No further action is required."
@@ -58,7 +58,7 @@ const EmployeeRegistration: React.FC = () => {
   // Handle Capacity Reached professional UI
   if (error === 'Registration Capacity Reached') {
     return (
-      <SubmissionStatus 
+      <SubmissionStatus
         type="capacity-full"
         title="Registration Capacity Reached"
         message="The registration limit for this participant category has already been reached. We appreciate your interest in participating. Please contact the event organizer for further assistance."
@@ -82,7 +82,7 @@ const EmployeeRegistration: React.FC = () => {
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <Input label="Full Name" {...register('name')} placeholder="Enter name" error={errors.name?.message} />
         <Input label="Department" {...register('department')} placeholder="e.g. CS / Engineering" error={errors.department?.message} />
-        
+
         <div className="pt-2">
           <LoadingButton
             type="submit"
