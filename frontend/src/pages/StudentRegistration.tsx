@@ -18,7 +18,7 @@ const StudentRegistration: React.FC = () => {
   const { execute: submitData, isSubmitting, error, success, hasAlreadySubmitted } = useSubmission(
     (data: StudentFormData) => submitRegistration('student', { ...data, quotaId } as any)
   );
-  
+
   const {
     register,
     handleSubmit,
@@ -33,10 +33,10 @@ const StudentRegistration: React.FC = () => {
   // Helper to format Student ID (00-0000)
   const handleStudentIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value;
-    
+
     // 1. Remove invalid characters (only allow digits and one hyphen)
     value = value.replace(/[^\d-]/g, '');
-    
+
     // 2. Prevent multiple hyphens
     if ((value.match(/-/g) || []).length > 1) {
       value = value.replace(/-+$/, '');
@@ -46,7 +46,7 @@ const StudentRegistration: React.FC = () => {
     if (!value.includes('-') && value.length > 2) {
       value = `${value.slice(0, 2)}-${value.slice(2, 6)}`;
     }
-    
+
     // 4. Ensure hyphen is in correct position (index 2)
     if (value.includes('-') && value.indexOf('-') !== 2) {
       const digits = value.replace(/-/g, '');
@@ -55,7 +55,7 @@ const StudentRegistration: React.FC = () => {
 
     // 5. Final length check
     value = value.slice(0, 7);
-    
+
     setValue('studentId', value, { shouldValidate: true });
   };
 
@@ -72,7 +72,7 @@ const StudentRegistration: React.FC = () => {
 
   if (hasAlreadySubmitted) {
     return (
-      <SubmissionStatus 
+      <SubmissionStatus
         type="already-submitted"
         title="Already Registered"
         message="Our system has already received your student registration. Duplicate entries are not allowed."
@@ -82,7 +82,7 @@ const StudentRegistration: React.FC = () => {
 
   if (success) {
     return (
-      <SubmissionStatus 
+      <SubmissionStatus
         type="success"
         title="Registration Submitted"
         message="Your student registration has been recorded successfully. Thank you for participating in the event!"
@@ -93,7 +93,7 @@ const StudentRegistration: React.FC = () => {
   // Handle Capacity Reached professional UI
   if (error === 'Registration Capacity Reached') {
     return (
-      <SubmissionStatus 
+      <SubmissionStatus
         type="capacity-full"
         title="Registration Capacity Reached"
         message="The registration limit for this participant category has already been reached. We appreciate your interest in participating. Please contact the event organizer for further assistance."
@@ -113,30 +113,30 @@ const StudentRegistration: React.FC = () => {
           {error}
         </div>
       )}
-      
+
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        <Select 
-          label="Year Level" 
-          options={[{ value: '3rd Year', label: '3rd Year' }, { value: '4th Year', label: '4th Year' }]} 
-          {...register('yearLevel')} 
-          error={errors.yearLevel?.message} 
+        <Select
+          label="Year Level"
+          options={[{ value: '3rd Year', label: '3rd Year' }, { value: '4th Year', label: '4th Year' }]}
+          {...register('yearLevel')}
+          error={errors.yearLevel?.message}
         />
 
         {yearLevel === '3rd Year' && (
           <div className="space-y-4 animate-in fade-in slide-in-from-left-2 duration-500">
-            <Input 
-              label="Email Address" 
+            <Input
+              label="Email Address"
               type="email"
               placeholder="your.name@example.com"
-              {...register('email')} 
-              error={errors.email?.message} 
+              {...register('email')}
+              error={errors.email?.message}
             />
-            <Input 
-              label="Student ID" 
-              {...register('studentId', { onChange: handleStudentIdChange })} 
-              placeholder="00-0000" 
+            <Input
+              label="Student ID"
+              {...register('studentId', { onChange: handleStudentIdChange })}
+              placeholder="00-0000"
               maxLength={7}
-              error={errors.studentId?.message} 
+              error={errors.studentId?.message}
             />
             <Input label="Full Name" {...register('name')} error={errors.name?.message} />
             <Input label="Section" {...register('section')} placeholder="SBIT-3G" error={errors.section?.message} />
@@ -145,25 +145,25 @@ const StudentRegistration: React.FC = () => {
 
         {yearLevel === '4th Year' && (
           <div className="space-y-4 animate-in fade-in slide-in-from-right-2 duration-500">
-            <Select 
-              label="Participation Role" 
+            <Select
+              label="Participation Role"
               options={[
                 { value: 'Participant', label: 'Participant' },
                 { value: 'Presenter', label: 'Presenter' },
                 { value: 'Poster', label: 'Poster' }
-              ]} 
-              {...register('studentRole')} 
-              error={errors.studentRole?.message} 
+              ]}
+              {...register('studentRole')}
+              error={errors.studentRole?.message}
             />
 
             {studentRole && (
               <div className="animate-in fade-in zoom-in-95 duration-500">
-                <Input 
-                  label="Email Address" 
+                <Input
+                  label="Email Address"
                   type="email"
                   placeholder="your.name@example.com"
-                  {...register('email')} 
-                  error={errors.email?.message} 
+                  {...register('email')}
+                  error={errors.email?.message}
                   className="mb-4"
                 />
               </div>
@@ -171,12 +171,12 @@ const StudentRegistration: React.FC = () => {
 
             {studentRole === 'Participant' && (
               <div className="space-y-4 animate-in fade-in zoom-in-95 duration-500">
-                <Input 
-                  label="Student ID" 
-                  {...register('studentId', { onChange: handleStudentIdChange })} 
-                  placeholder="00-0000" 
+                <Input
+                  label="Student ID"
+                  {...register('studentId', { onChange: handleStudentIdChange })}
+                  placeholder="00-0000"
                   maxLength={7}
-                  error={errors.studentId?.message} 
+                  error={errors.studentId?.message}
                 />
                 <Input label="Full Name" {...register('name')} error={errors.name?.message} />
                 <Input label="Section" {...register('section')} placeholder="SBIT-4G" error={errors.section?.message} />
@@ -185,12 +185,12 @@ const StudentRegistration: React.FC = () => {
 
             {(studentRole === 'Presenter' || studentRole === 'Poster') && (
               <div className="space-y-4 animate-in fade-in zoom-in-95 duration-500">
-                <Input 
-                  label="Student ID" 
-                  {...register('studentId', { onChange: handleStudentIdChange })} 
-                  placeholder="00-0000" 
+                <Input
+                  label="Student ID"
+                  {...register('studentId', { onChange: handleStudentIdChange })}
+                  placeholder="00-0000"
                   maxLength={7}
-                  error={errors.studentId?.message} 
+                  error={errors.studentId?.message}
                 />
                 <Input label="Representative Name" {...register('representativeName')} error={errors.representativeName?.message} />
                 <Input label="Group Number" {...register('groupNumber')} error={errors.groupNumber?.message} />

@@ -21,7 +21,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ category, title }) 
   const { execute: submitData, isSubmitting, error, success, hasAlreadySubmitted } = useSubmission(
     (data: any) => submitRegistration(category, { ...data, quotaId })
   );
-  
+
   const {
     register,
     handleSubmit,
@@ -41,7 +41,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ category, title }) 
 
   if (hasAlreadySubmitted) {
     return (
-      <SubmissionStatus 
+      <SubmissionStatus
         type="already-submitted"
         title="Already Registered"
         message={`Our system has already received your ${category} registration. Duplicate entries are not allowed.`}
@@ -51,7 +51,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ category, title }) 
 
   if (success) {
     return (
-      <SubmissionStatus 
+      <SubmissionStatus
         type="success"
         title="Registration Confirmed"
         message="Your faculty/staff registration has been successfully recorded. No further action is required."
@@ -62,7 +62,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ category, title }) 
   // Handle Capacity Reached professional UI
   if (error === 'Registration Capacity Reached') {
     return (
-      <SubmissionStatus 
+      <SubmissionStatus
         type="capacity-full"
         title="Registration Capacity Reached"
         message="The registration limit for this participant category has already been reached. We appreciate your interest in participating. Please contact the event organizer for further assistance."

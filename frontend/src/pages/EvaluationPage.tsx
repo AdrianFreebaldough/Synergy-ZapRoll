@@ -57,12 +57,13 @@ const EvaluationPage: React.FC = () => {
     }
   }, [persistenceKey]);
 
-  // ── Fetch Template ──
+  // ── Fetch Template (session-aware) ──
+  // Pass the resolved session so the backend returns the correct template row.
   useEffect(() => {
     const load = async () => {
       try {
         setIsLoading(true);
-        const data = await fetchEvaluationTemplate();
+        const data = await fetchEvaluationTemplate(sessionLabel);
         setTemplate(data);
       } catch (err: any) {
         setFetchError(err.response?.data?.error || 'Failed to load evaluation form');
@@ -71,7 +72,7 @@ const EvaluationPage: React.FC = () => {
       }
     };
     load();
-  }, []); // No dependencies needed anymore
+  }, [sessionLabel]); // Re-fetch if session changes
 
   // ── Student ID Input Mask (00-0000 format) ──
   const handleStudentIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -239,17 +240,39 @@ const EvaluationPage: React.FC = () => {
   }
 
   if (fetchError || !template || pages.length === 0) {
+    const isNoActive = !fetchError || fetchError.toLowerCase().includes('no active') || fetchError.toLowerCase().includes('not available');
     return (
-      <div className="glass-card p-8 text-center max-w-[720px] mx-auto">
-        <div className="w-16 h-16 bg-app-danger/10 text-app-danger rounded-full flex items-center justify-center mx-auto mb-4 border border-app-danger/20">
-          <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-          </svg>
+      <div className="max-w-[720px] mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <div className="glass-card overflow-hidden border-t-8 border-t-white/10">
+          <div className="p-8 md:p-12 flex flex-col items-center text-center gap-6">
+            {/* Icon */}
+            <div className="w-20 h-20 rounded-2xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center">
+              <svg className="w-9 h-9 text-app-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+              </svg>
+            </div>
+
+            {/* Copy */}
+            <div className="space-y-2 max-w-sm">
+              <h2 className="text-xl font-bold text-white tracking-tight">
+                {isNoActive ? 'Evaluation Period Has Ended' : 'Evaluation Unavailable'}
+              </h2>
+              <p className="text-app-text-secondary text-sm leading-relaxed">
+                {isNoActive
+                  ? `The ${sessionLabel.toUpperCase()} session evaluation window is currently closed. If you believe this is an error, please contact the event organizer.`
+                  : fetchError}
+              </p>
+            </div>
+
+            {/* Divider */}
+            <div className="w-full border-t border-white/[0.06]" />
+
+            {/* Footer note */}
+            <p className="text-[11px] text-app-text-muted uppercase tracking-widest font-medium">
+              Synergy {sessionLabel.toUpperCase()} Session &nbsp;·&nbsp; Evaluation Closed
+            </p>
+          </div>
         </div>
-        <h2 className="text-xl font-bold text-white mb-2">Evaluation Not Found</h2>
-        <p className="text-app-text-secondary text-sm">
-          {fetchError || 'No evaluation form is currently available for this event.'}
-        </p>
       </div>
     );
   }

@@ -162,16 +162,16 @@ export const registerEntry = async (req: Request, res: Response) => {
         .maybeSingle();
 
       if (sessionLookupError) throw new Error(`Session Lookup Failed: ${sessionLookupError.message}`);
-      
+
       if (!session) {
         throw new Error(`No open ${isAfternoon ? 'PM' : 'AM'} session was found for walk-in check-in.`);
       }
 
       const typeLower = (session.session_type || '').toLowerCase();
-      const sessionTypeField = 
-        typeLower.includes('employee') ? 'employee_scanned_at' : 
-        typeLower.includes('pm') ? 'pm_scanned_at' : 
-        'am_scanned_at';
+      const sessionTypeField =
+        typeLower.includes('employee') ? 'employee_scanned_at' :
+          typeLower.includes('pm') ? 'pm_scanned_at' :
+            'am_scanned_at';
 
       const { error: attendError } = await supabase
         .from('attendance')
