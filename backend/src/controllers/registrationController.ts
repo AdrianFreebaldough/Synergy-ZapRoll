@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { supabase } from '../supabase/client.js';
+import { sendRegistrationEmail, sendAttendanceEmail } from '../utils/mailer.js';
 
 export const registerEntry = async (req: Request, res: Response) => {
   const { category } = req.params;
@@ -23,6 +24,7 @@ export const registerEntry = async (req: Request, res: Response) => {
 
     // 0.1 Quota/Capacity Check (Real-Time Validation)
     let targetEventId = latestEvent.id;
+    const isPoster = otherData.studentRole === 'Poster Presenter';
 
     if (quotaId) {
       // Fetch the specific quota record (Use maybeSingle to avoid coercion errors)
@@ -55,19 +57,30 @@ export const registerEntry = async (req: Request, res: Response) => {
         });
       }
 
+      // 0.2 Active Status Check
+      if (!quota.is_open) {
+        return res.status(403).json({
+          error: 'Registration Closed',
+          message: `Registration for ${quota.category} is currently closed.`,
+          subtext: 'Please wait for the organizers to open the registration period.'
+        });
+      }
+
       // Important: Use the event_id linked to the quota
       targetEventId = quota.event_id || latestEvent.id;
 
       // Count existing registrations for this quota to prevent overbooking
+      // BUSINESS RULE: 'Poster Presenter' role does not count towards the quota limit
       const { count, error: countError } = await supabase
         .from('registrations')
         .select('*', { count: 'exact', head: true })
         .eq('quota_id', quotaId)
-        .eq('status', 'registered');
+        .eq('status', 'registered')
+        .or(`metadata->>studentRole.neq."Poster Presenter",metadata->>studentRole.is.null`);
 
       if (countError) throw countError;
 
-      if (count !== null && count >= quota.capacity) {
+      if (!isPoster && count !== null && count >= quota.capacity) {
         return res.status(423).json({
           error: 'Registration Capacity Reached',
           message: `The registration limit for ${quota.category} has already been reached.`,
@@ -125,7 +138,7 @@ export const registerEntry = async (req: Request, res: Response) => {
           full_name: finalName,
           email: email || null,
           external_id: externalId,
-          quota_id: quotaId || null,
+          quota_id: isPoster ? null : (quotaId || null),
           metadata: metadata,
           status: 'registered',
           reg_type: req.body.isWalkIn ? 'walk-in' : 'pre-reg',
@@ -145,6 +158,18 @@ export const registerEntry = async (req: Request, res: Response) => {
     }
 
     const registration = result[0];
+    console.log('--- Email Trigger Debug ---');
+    console.log('Registration Success! Email found:', registration.email);
+    console.log('Name:', registration.full_name);
+
+    // 4.1 Trigger Registration Email (Async)
+    if (registration.email) {
+      console.log('Calling sendRegistrationEmail...');
+      sendRegistrationEmail(registration.email, registration.full_name)
+        .then(() => console.log('✅ Mailer process initiated'))
+        .catch(err => console.error('❌ Background Email Error:', err));
+    }
+    console.log('---------------------------');
 
     // 5. Automatic Attendance for Walk-ins (Mandatory for walk-in registrations)
     if (req.body.isWalkIn) {
@@ -184,6 +209,22 @@ export const registerEntry = async (req: Request, res: Response) => {
 
       if (attendError) {
         throw new Error(`Attendance Recording Failed: ${attendError.message}`);
+      }
+
+      // 5.1 Trigger Attendance Email for Walk-ins (Async)
+      const meta = registration.metadata as any;
+      const is3rdYear = meta?.yearLevel === '3rd Year';
+      const isCollPart = meta?.studentRole === 'Colloquium Participant';
+      const isCollPres = meta?.studentRole === 'Colloquium Presenter';
+
+      if (registration.email && (is3rdYear || isCollPart || isCollPres)) {
+        const datePart = `${new Date().getDate()}${(new Date().getMonth() + 1).toString().padStart(2, '0')}`;
+        const shortId = registration.id.split('-')[0].toUpperCase().slice(0, 4);
+        const sessionLabel = (session.session_type || 'EVT').split(' ')[0].toUpperCase();
+        const verificationId = `${sessionLabel}-${shortId}-${datePart}`;
+
+        sendAttendanceEmail(registration.email, registration.full_name, session.session_type, verificationId)
+          .catch(err => console.error('Background Walk-in Attendance Email Error:', err));
       }
     }
 

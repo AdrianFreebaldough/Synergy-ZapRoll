@@ -147,9 +147,9 @@ const WalkInRegistration: React.FC = () => {
             <Select
               label="Participation Role"
               options={[
-                { value: 'Participant', label: 'Participant' },
-                { value: 'Presenter', label: 'Presenter' },
-                { value: 'Poster', label: 'Poster' }
+                { value: 'Colloquium Participant', label: 'Colloquium Participant' },
+                { value: 'Colloquium Presenter', label: 'Colloquium Presenter' },
+                { value: 'Poster Presenter', label: 'Poster Presenter' }
               ]}
               {...register('studentRole')}
               error={errors.studentRole?.message}
@@ -168,7 +168,7 @@ const WalkInRegistration: React.FC = () => {
               </div>
             )}
 
-            {studentRole === 'Participant' && (
+            {studentRole === 'Colloquium Participant' && (
               <div className="space-y-4 animate-in fade-in zoom-in-95 duration-500">
                 <Input
                   label="Student ID"
@@ -182,7 +182,7 @@ const WalkInRegistration: React.FC = () => {
               </div>
             )}
 
-            {(studentRole === 'Presenter' || studentRole === 'Poster') && (
+            {(studentRole === 'Colloquium Presenter' || studentRole === 'Poster Presenter') && (
               <div className="space-y-4 animate-in fade-in zoom-in-95 duration-500">
                 <Input
                   label="Student ID"
@@ -191,7 +191,11 @@ const WalkInRegistration: React.FC = () => {
                   maxLength={7}
                   error={errors.studentId?.message}
                 />
-                <Input label="Representative Name" {...register('representativeName')} error={errors.representativeName?.message} />
+                <Input 
+                  label={studentRole === 'Poster Presenter' ? "Full Name" : "Representative Name"} 
+                  {...register('representativeName')} 
+                  error={errors.representativeName?.message} 
+                />
                 <Input label="Group Number" {...register('groupNumber')} error={errors.groupNumber?.message} />
                 <Input label="Section" {...register('section')} placeholder="SBIT-4G" error={errors.section?.message} />
                 <Input label="Capstone Title" {...register('capstoneTitle')} error={errors.capstoneTitle?.message} />

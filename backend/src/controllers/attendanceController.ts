@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { supabase } from '../supabase/client.js';
+import { sendAttendanceEmail } from '../utils/mailer.js';
 
 export const submitAttendance = async (req: Request, res: Response) => {
   const { studentId, name, category, token, session: sessionType } = req.body;
@@ -109,6 +110,24 @@ export const submitAttendance = async (req: Request, res: Response) => {
       throw upsertError;
     }
 
+    // 4. Trigger Attendance Email (Async)
+    // Filter: Only 3rd Years, 4th Year Colloquium Participants, and 4th Year Colloquium Presenters
+    const meta = registration.metadata as any;
+    const is3rdYear = meta?.yearLevel === '3rd Year';
+    const isCollPart = meta?.studentRole === 'Colloquium Participant';
+    const isCollPres = meta?.studentRole === 'Colloquium Presenter';
+
+    if (registration.email && (is3rdYear || isCollPart || isCollPres)) {
+      // Generate a Unique Verification Code (Format: SESSION-REGID-DATE)
+      const datePart = `${new Date().getDate()}${(new Date().getMonth() + 1).toString().padStart(2, '0')}`;
+      const shortId = registration.id.split('-')[0].toUpperCase().slice(0, 4);
+      const sessionLabel = (session.session_type || 'EVT').split(' ')[0].toUpperCase();
+      const verificationId = `${sessionLabel}-${shortId}-${datePart}`;
+
+      sendAttendanceEmail(registration.email, registration.full_name, session.session_type, verificationId)
+        .catch(err => console.error('Background Attendance Email Error:', err));
+    }
+
     return res.status(201).json({
       message: 'Attendance recorded successfully',
       session: session.session_type,
@@ -151,10 +170,10 @@ export const posterLogout = async (req: Request, res: Response) => {
 
     // Verify if they are a poster participant (Strict restriction)
     const metadata = registration.metadata as any;
-    if (metadata?.studentRole !== 'Poster') {
+    if (metadata?.studentRole !== 'Poster Presenter') {
       return res.status(403).json({
         error: 'Not a Poster Participant',
-        message: 'This logout form is exclusively for students registered with the "Poster" role. Your registered role is different.'
+        message: 'This logout form is exclusively for students registered with the "Poster Presenter" role. Your registered role is different.'
       });
     }
 

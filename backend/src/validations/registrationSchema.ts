@@ -28,8 +28,8 @@ export const studentSchema = baseSchema.extend({
   studentId: z.string().regex(studentIdRegex, 'Format must be 00-0000').optional(),
   name: z.string().min(2, 'Name is required').optional(),
   section: z.string().min(1, 'Section is required').optional(),
-  studentRole: z.enum(['Participant', 'Presenter', 'Poster']).optional(),
-  representativeName: z.string().min(2, 'Representative name is required').optional(),
+  studentRole: z.enum(['Colloquium Participant', 'Colloquium Presenter', 'Poster Presenter']).optional(),
+  representativeName: z.string().min(2, 'Name is required').optional(),
   groupNumber: z.string().min(1, 'Group number is required').optional(),
   capstoneTitle: z.string().min(2, 'Capstone title is required').optional(),
 }).refine((data) => {
@@ -37,10 +37,10 @@ export const studentSchema = baseSchema.extend({
     return !!data.studentId && !!data.name && !!data.section;
   }
   if (data.yearLevel === '4th Year') {
-    if (data.studentRole === 'Participant') {
+    if (data.studentRole === 'Colloquium Participant') {
       return !!data.studentId && !!data.name && !!data.section;
     }
-    if (data.studentRole === 'Presenter' || data.studentRole === 'Poster') {
+    if (data.studentRole === 'Colloquium Presenter' || data.studentRole === 'Poster Presenter') {
       return !!data.representativeName && !!data.groupNumber && !!data.section && !!data.capstoneTitle;
     }
   }
