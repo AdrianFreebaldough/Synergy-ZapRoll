@@ -165,7 +165,8 @@ export const registerEntry = async (req: Request, res: Response) => {
     // 4.1 Trigger Registration Email (Async)
     if (registration.email) {
       console.log('Calling sendRegistrationEmail...');
-      sendRegistrationEmail(registration.email, registration.full_name)
+      const role = (registration.metadata as any)?.studentRole;
+      sendRegistrationEmail(registration.email, registration.full_name, role)
         .then(() => console.log('✅ Mailer process initiated'))
         .catch(err => console.error('❌ Background Email Error:', err));
     }
