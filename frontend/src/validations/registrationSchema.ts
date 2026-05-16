@@ -29,7 +29,7 @@ export const studentSchema = baseSchema.extend({
   studentId: z.string().regex(studentIdRegex, 'Format must be 00-0000').optional(),
   name: z.string().min(2, 'Name is required').optional(),
   section: z.string().min(1, 'Section is required').optional(),
-  studentRole: z.enum(['Participant', 'Presenter', 'Poster']).optional(),
+  studentRole: z.enum(['Colloquium Participant', 'Colloquium Presenter', 'Poster Presenter']).optional(),
   representativeName: z.string().min(2, 'Representative name is required').optional(),
   groupNumber: z.string().min(1, 'Group number is required').optional(),
   capstoneTitle: z.string().min(2, 'Capstone title is required').optional(),
@@ -79,12 +79,12 @@ export const studentSchema = baseSchema.extend({
   }
 
   if (data.yearLevel === '4th Year') {
-    if (data.studentRole === 'Participant') {
+    if (data.studentRole === 'Colloquium Participant') {
       if (!data.studentId) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "ID is required", path: ["studentId"] });
       if (!data.name) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Name is required", path: ["name"] });
       if (!data.section) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Section is required", path: ["section"] });
     }
-    if (data.studentRole === 'Presenter' || data.studentRole === 'Poster') {
+    if (data.studentRole === 'Colloquium Presenter' || data.studentRole === 'Poster Presenter') {
       if (!data.studentId) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "ID is required", path: ["studentId"] });
       if (!data.representativeName) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Required", path: ["representativeName"] });
       if (!data.groupNumber) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Required", path: ["groupNumber"] });
