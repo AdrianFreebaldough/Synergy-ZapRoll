@@ -8,17 +8,34 @@ interface QuestionProps {
 }
 
 // =============================================================================
+// HELPER — Preserves \n newlines from the mobile app as <br/> tags on web
+// =============================================================================
+const PreservedText: React.FC<{ text: string; className?: string }> = ({ text, className }) => {
+  const parts = text.split('\n');
+  return (
+    <span className={className}>
+      {parts.map((part, i) => (
+        <React.Fragment key={i}>
+          {part}
+          {i < parts.length - 1 && <br />}
+        </React.Fragment>
+      ))}
+    </span>
+  );
+};
+
+// =============================================================================
 // HEADER — Display-only title/divider block
 // =============================================================================
 export const HeaderBlock: React.FC<QuestionProps> = ({ question }) => {
   return (
     <div className="space-y-1">
       <h2 className="text-lg md:text-xl font-bold text-white tracking-tight">
-        {question.label}
+        <PreservedText text={question.label} />
       </h2>
       {question.description && (
         <p className="text-xs text-app-text-secondary leading-relaxed opacity-80">
-          {question.description}
+          <PreservedText text={question.description} />
         </p>
       )}
     </div>
@@ -42,11 +59,11 @@ export const PrivacyNotice: React.FC<QuestionProps> = ({ question }) => {
           </div>
           <div>
             <h3 className="text-sm font-semibold text-white/90 mb-1">
-              {question.label}
+              <PreservedText text={question.label} />
             </h3>
             {question.description && (
               <p className="text-[11px] text-app-text-secondary leading-relaxed">
-                {question.description}
+                <PreservedText text={question.description} />
               </p>
             )}
           </div>
@@ -81,7 +98,6 @@ export const StarRating: React.FC<QuestionProps> = ({ question }) => {
   const { register, setValue, watch, formState: { errors } } = useFormContext();
   const currentValue = watch(question.id);
 
-  // Register the field for validation
   React.useEffect(() => {
     register(question.id, { required: question.required });
   }, [register, question.id, question.required]);
@@ -91,12 +107,12 @@ export const StarRating: React.FC<QuestionProps> = ({ question }) => {
   return (
     <div className="space-y-3">
       <label className="block text-sm font-semibold text-white/90">
-        {question.label}
+        <PreservedText text={question.label} />
         {question.required && <span className="text-app-danger ml-1">*</span>}
       </label>
       {question.description && (
         <p className="text-[10px] text-app-text-muted uppercase tracking-wider leading-tight">
-          {question.description}
+          <PreservedText text={question.description} />
         </p>
       )}
 
@@ -147,10 +163,23 @@ export const StarRating: React.FC<QuestionProps> = ({ question }) => {
 // =============================================================================
 // LIKERT TABLE — Driven by statements[] array from mobile app
 // =============================================================================
+const LIKERT_SCALES: Record<string, string[]> = {
+  agreement: ['Strongly Disagree', 'Disagree', 'Neutral', 'Agree', 'Strongly Agree'],
+  quality: ['Needs Improvement', 'Fair', 'Good', 'Very Good', 'Excellent'],
+  frequency: ['Never', 'Rarely', 'Sometimes', 'Often', 'Always'],
+  satisfaction: ['Very Dissatisfied', 'Dissatisfied', 'Neutral', 'Satisfied', 'Very Satisfied'],
+};
+
 export const EvalLikertTable: React.FC<QuestionProps> = ({ question }) => {
   const { register, formState: { errors } } = useFormContext();
   const statements = question.statements || [];
-  const scaleLabels = ['Strongly Disagree', 'Disagree', 'Neutral', 'Agree', 'Strongly Agree'];
+  
+  // Use options from JSON if available, otherwise fallback to lookup
+  const category = question.likertScaleType?.toLowerCase() || 'agreement';
+  const scaleLabels = (question.options && question.options.length > 0) 
+    ? question.options 
+    : (LIKERT_SCALES[category] || LIKERT_SCALES.agreement);
+    
   const scaleValues = [1, 2, 3, 4, 5];
 
   if (statements.length === 0) {
@@ -164,12 +193,12 @@ export const EvalLikertTable: React.FC<QuestionProps> = ({ question }) => {
   return (
     <div className="space-y-3">
       <label className="block text-sm font-semibold text-white/90">
-        {question.label}
+        <PreservedText text={question.label} />
         {question.required && <span className="text-app-danger ml-1">*</span>}
       </label>
       {question.description && (
         <p className="text-[10px] text-app-text-muted uppercase tracking-wider leading-tight mb-1">
-          {question.description}
+          <PreservedText text={question.description} />
         </p>
       )}
 
@@ -194,7 +223,7 @@ export const EvalLikertTable: React.FC<QuestionProps> = ({ question }) => {
                 return (
                   <tr key={sIdx} className="glass-card bg-white/[0.02]">
                     <td className="p-3 text-xs text-app-text-secondary font-medium leading-snug">
-                      {statement}
+                      <PreservedText text={statement} />
                     </td>
                     {scaleValues.map((value) => (
                       <td key={value} className="p-3 text-center">
@@ -214,7 +243,6 @@ export const EvalLikertTable: React.FC<QuestionProps> = ({ question }) => {
         </div>
       </div>
 
-      {/* Show error if any statement is unanswered */}
       {statements.some((_, sIdx) => errors[`${question.id}_s${sIdx}`]) && (
         <p className="text-app-danger text-[10px] uppercase font-bold tracking-wide">
           Please answer all statements
@@ -234,16 +262,16 @@ export const EvalShortText: React.FC<QuestionProps> = ({ question }) => {
   return (
     <div className="space-y-1.5">
       <label className="block text-sm font-semibold text-white/90">
-        {question.label}
+        <PreservedText text={question.label} />
         {question.required && <span className="text-app-danger ml-1">*</span>}
       </label>
       {question.description && (
         <p className="text-[10px] text-app-text-muted uppercase tracking-wider leading-tight">
-          {question.description}
+          <PreservedText text={question.description} />
         </p>
       )}
       <input
-        {...register(question.id, { 
+        {...register(question.id, {
           required: question.required ? 'This field is required' : false,
           pattern: isEmail ? {
             value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
@@ -271,12 +299,12 @@ export const EvalParagraph: React.FC<QuestionProps> = ({ question }) => {
   return (
     <div className="space-y-1.5">
       <label className="block text-sm font-semibold text-white/90">
-        {question.label}
+        <PreservedText text={question.label} />
         {question.required && <span className="text-app-danger ml-1">*</span>}
       </label>
       {question.description && (
         <p className="text-[10px] text-app-text-muted uppercase tracking-wider leading-tight">
-          {question.description}
+          <PreservedText text={question.description} />
         </p>
       )}
       <textarea
@@ -299,12 +327,12 @@ export const EvalRadioGroup: React.FC<QuestionProps> = ({ question }) => {
   return (
     <div className="space-y-2">
       <label className="block text-sm font-semibold text-white/90">
-        {question.label}
+        <PreservedText text={question.label} />
         {question.required && <span className="text-app-danger ml-1">*</span>}
       </label>
       {question.description && (
         <p className="text-[10px] text-app-text-muted uppercase tracking-wider leading-tight">
-          {question.description}
+          <PreservedText text={question.description} />
         </p>
       )}
       <div className="space-y-1.5">
@@ -337,12 +365,12 @@ export const EvalCheckboxGroup: React.FC<QuestionProps> = ({ question }) => {
   return (
     <div className="space-y-2">
       <label className="block text-sm font-semibold text-white/90">
-        {question.label}
+        <PreservedText text={question.label} />
         {question.required && <span className="text-app-danger ml-1">*</span>}
       </label>
       {question.description && (
         <p className="text-[10px] text-app-text-muted uppercase tracking-wider leading-tight">
-          {question.description}
+          <PreservedText text={question.description} />
         </p>
       )}
       <div className="space-y-1.5">
@@ -375,7 +403,7 @@ export const EvalDropdown: React.FC<QuestionProps> = ({ question }) => {
   return (
     <div className="space-y-1.5">
       <label className="block text-sm font-semibold text-white/90">
-        {question.label}
+        <PreservedText text={question.label} />
         {question.required && <span className="text-app-danger ml-1">*</span>}
       </label>
       <select

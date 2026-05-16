@@ -158,7 +158,7 @@ export const verifyAttendance = async (req: Request, res: Response) => {
     }
 
     const submittedAtField = sessionLabel.toLowerCase() === 'pm' ? 'pm_eval_submitted_at' : 'am_eval_submitted_at';
-    
+
     if (existingResponse && (existingResponse as any)[submittedAtField]) {
       return res.status(403).json({
         error: 'Already Submitted',
@@ -210,15 +210,14 @@ export const submitEvaluationResponse = async (req: Request, res: Response) => {
     if (sessionLabel !== 'am' && sessionLabel !== 'pm') {
       sessionLabel = new Date().getHours() >= 12 ? 'pm' : 'am';
     }
-    
+
     const submittedAtField = sessionLabel === 'pm' ? 'pm_eval_submitted_at' : 'am_eval_submitted_at';
     const responsesField = sessionLabel === 'pm' ? 'pm_eval_responses' : 'am_eval_responses';
 
-    // 1. Check if already submitted for this specific session
+    // 1. Check for existing response by registration_id to ensure we update the same row
     const { data: existing, error: checkError } = await supabase
       .from('evaluation_responses')
-      .select('am_eval_submitted_at, pm_eval_submitted_at')
-      .eq('template_id', template_id)
+      .select('*')
       .eq('registration_id', registration_id)
       .maybeSingle();
 
@@ -226,6 +225,7 @@ export const submitEvaluationResponse = async (req: Request, res: Response) => {
       console.error('Submission Check Error:', checkError);
     }
 
+    // 2. Check if already submitted for this specific session
     if (existing && (existing as any)[submittedAtField]) {
       return res.status(400).json({
         error: 'Already Submitted',
@@ -233,37 +233,30 @@ export const submitEvaluationResponse = async (req: Request, res: Response) => {
       });
     }
 
-    // 2. Record or update the evaluation (Upsert logic like attendance)
+    // 3. Record or update the evaluation (Following Attendance Upsert Pattern)
     const { data: result, error } = await supabase
       .from('evaluation_responses')
       .upsert({
-        template_id,
+        id: existing?.id, // CRITICAL: Use existing ID to update the same row
+        template_id,      // Associates with the template being filled
         registration_id,
         [submittedAtField]: new Date().toISOString(),
         [responsesField]: responses
-      }, {
-        onConflict: 'template_id,registration_id'
       })
       .select();
 
     if (error) {
-      if (error.code === '23505') {
-        return res.status(400).json({
-          error: 'Already Submitted',
-          message: 'You have already submitted an evaluation for this event.'
-        });
-      }
       throw error;
     }
 
     return res.status(201).json({
       message: 'Evaluation submitted successfully',
-      data: result[0]
+      data: result ? result[0] : null
     });
 
   } catch (error: any) {
     console.error('Submit Evaluation Error:', error);
-    return res.status(500).json({ 
+    return res.status(500).json({
       error: error.message || 'Failed to submit evaluation',
       details: error.details || null,
       hint: error.hint || null,

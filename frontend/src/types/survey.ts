@@ -17,6 +17,7 @@ export type EvalQuestionType =
   | 'radio'
   | 'checkbox'
   | 'dropdown'
+  | 'choice'
   | 'linear_scale'
   | 'grid_multiple_choice'
   | 'grid_checkbox';
@@ -31,12 +32,16 @@ export interface EvalQuestion {
   required: boolean;
   /** Used by likert questions — array of statement strings */
   statements: string[];
-  /** Used by radio/checkbox/dropdown — array of option strings */
+  /** Used by radio/checkbox/dropdown/choice — array of option strings */
   options?: string[];
   /** Optional description/subtitle */
   description?: string;
   /** Optional subtype (e.g., 'email' for text questions) */
   subtype?: string;
+  /** Used by likert questions — the scale category (agreement, quality, relevance, frequency) */
+  likertScaleType?: string;
+  /** For choice questions, whether to include an "Other" option */
+  hasOther?: boolean;
   /** Grid config (rows/cols) for legacy web-created surveys */
   config?: {
     min_label?: string;

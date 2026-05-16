@@ -3,14 +3,14 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { attendanceSchema, AttendanceSchemaType } from '../../validations/attendanceSchema';
 import { useSubmission } from '../../hooks/useSubmission';
-import { submitAttendance } from '../../services/attendanceService';
+import { submitAttendance, posterLogout } from '../../services/attendanceService';
 import Input from '../ui/Input';
 import LoadingButton from '../ui/LoadingButton';
 import SubmissionStatus from '../ui/SubmissionStatus';
 
 interface AttendanceFormProps {
-  category: 'student' | 'employee' | 'guest';
-  session?: 'am' | 'pm';
+  category: 'student' | 'employee' | 'guest' | 'poster';
+  session?: 'am' | 'pm' | 'out';
   token?: string;
   title: string;
   subtitle: string;
@@ -18,7 +18,12 @@ interface AttendanceFormProps {
 
 const AttendanceForm: React.FC<AttendanceFormProps> = ({ category, session, token, title, subtitle }) => {
   const { execute: submit, isSubmitting, error, success, hasAlreadySubmitted } = useSubmission(
-    (data: AttendanceSchemaType) => submitAttendance({ ...data, session, token })
+    (data: AttendanceSchemaType) => {
+      if (category === 'poster') {
+        return posterLogout((data as any).studentId);
+      }
+      return submitAttendance({ ...data, session: session as any, token });
+    }
   );
 
   const {
@@ -33,7 +38,7 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ category, session, toke
 
   // Helper to format Student ID (00-0000)
   const handleStudentIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (category !== 'student') return;
+    if (category !== 'student' && category !== 'poster') return;
     let value = e.target.value;
     value = value.replace(/[^\d-]/g, '');
     if ((value.match(/-/g) || []).length > 1) {
@@ -92,7 +97,7 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ category, session, toke
       )}
 
       <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
-        {category === 'student' ? (
+        {category === 'student' || category === 'poster' ? (
           <Input 
             label="Student ID" 
             {...register('studentId' as any, { onChange: handleStudentIdChange })} 
@@ -118,7 +123,7 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ category, session, toke
             loadingText="Verifying..."
             size="lg"
           >
-            Mark Attendance
+            {category === 'poster' ? 'Confirm Logout' : 'Mark Attendance'}
           </LoadingButton>
         </div>
       </form>
