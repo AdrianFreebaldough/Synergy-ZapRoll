@@ -72,8 +72,12 @@ export const submitAttendance = async (req: Request, res: Response) => {
 
     // 3. Record Attendance (Robust Upsert Logic)
     const typeLower = (session.session_type || '').toLowerCase();
-    // PRIORITIZE employee field first, then PM, then AM
-    const sessionTypeField = typeLower.includes('employee') ? 'employee_scanned_at' : 
+    const metadata = registration.metadata as any;
+    const isPoster = metadata?.studentRole === 'Poster Presenter';
+
+    // PRIORITIZE poster field for posters, then employee, then PM/AM
+    const sessionTypeField = isPoster ? 'poster_scanned_at' :
+                             typeLower.includes('employee') ? 'employee_scanned_at' : 
                              typeLower.includes('pm') ? 'pm_scanned_at' : 
                              'am_scanned_at';
 
@@ -189,8 +193,16 @@ export const posterLogout = async (req: Request, res: Response) => {
     if (!existing) {
        return res.status(404).json({
          error: 'Attendance Record Not Found',
-         message: 'No attendance record found for this student. Did you check in for AM/PM first?'
+         message: 'No attendance record found for this student. Did you check in for the Poster session first?'
        });
+    }
+
+    // NEW CONDITION: Must have poster_scanned_at to logout
+    if (!existing.poster_scanned_at) {
+      return res.status(403).json({
+        error: 'No Check-in Found',
+        message: 'You cannot logout because you haven\'t recorded your check-in for the Poster session yet. Please scan the Poster Check-in QR first.'
+      });
     }
 
     if (existing.poster_out_at) {
