@@ -44,6 +44,7 @@ const EvalQuestionRenderer: React.FC<EvalQuestionRendererProps> = ({ question })
       return <EvalParagraph question={question} />;
 
     case 'radio':
+    case 'choice':
       return <EvalRadioGroup question={question} />;
 
     case 'checkbox':

@@ -5,9 +5,21 @@ import { useSearchParams } from 'react-router-dom';
 import { employeeSchema, EmployeeFormData } from '../validations/registrationSchema';
 import { useSubmission } from '../hooks/useSubmission';
 import Input from '../components/ui/Input';
+import Select from '../components/ui/Select';
 import LoadingButton from '../components/ui/LoadingButton';
 import { submitRegistration } from '../services/registrationService';
 import SubmissionStatus from '../components/ui/SubmissionStatus';
+
+const DEPARTMENTS = [
+  'College of Education',
+  'College of Computer Studies',
+  'College of Engineering',
+  'College of Accountancy',
+  'College of Entrepreneurship',
+  'Administrative Department',
+  'Security Services Department',
+  'Excellence department'
+];
 
 const EmployeeWalkIn: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -79,7 +91,12 @@ const EmployeeWalkIn: React.FC = () => {
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <Input label="Full Name" {...register('name')} placeholder="Enter name" error={errors.name?.message} />
-        <Input label="Department" {...register('department')} placeholder="e.g. CS / Engineering" error={errors.department?.message} />
+        <Select 
+          label="Department" 
+          {...register('department')} 
+          options={DEPARTMENTS.map(d => ({ value: d, label: d }))} 
+          error={errors.department?.message} 
+        />
 
         <div className="pt-2">
           <LoadingButton

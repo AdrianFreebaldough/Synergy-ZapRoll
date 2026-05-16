@@ -13,7 +13,8 @@ export const SECURE_TOKENS = {
     STUDENT_AM: 'f81ca2d771d91a',
     STUDENT_PM: 'g92db3e882e02b',
     EMPLOYEE: 'd3f4b5e61c7d2a',
-    GUEST: 'e5f6g7h81i9j3b'
+    GUEST: 'e5f6g7h81i9j3b',
+    POSTER_OUT: 'p1o2s3t4e5r6o7u'
   },
   // Survey Tokens
   SURVEY: {

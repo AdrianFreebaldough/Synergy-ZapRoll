@@ -1,8 +1,8 @@
-export type AttendanceCategory = 'student' | 'employee' | 'guest';
+export type AttendanceCategory = 'student' | 'employee' | 'guest' | 'poster';
 
 export interface AttendanceBase {
   category: AttendanceCategory;
-  session?: 'am' | 'pm';
+  session?: 'am' | 'pm' | 'out';
   token?: string;
   timestamp?: string;
 }
@@ -22,4 +22,9 @@ export interface GuestAttendance extends AttendanceBase {
   name: string;
 }
 
-export type AttendanceFormData = StudentAttendance | EmployeeAttendance | GuestAttendance;
+export interface PosterAttendance extends AttendanceBase {
+  category: 'poster';
+  studentId: string;
+}
+
+export type AttendanceFormData = StudentAttendance | EmployeeAttendance | GuestAttendance | PosterAttendance;

@@ -13,7 +13,8 @@ const AttendanceEntry: React.FC<AttendanceEntryProps> = ({ subType }) => {
   const validCategories = [
     'student_am', 'student_pm', 
     'employee', 
-    'guest'
+    'guest',
+    'poster_out'
   ];
   
   if (!categoryFull || !validCategories.includes(categoryFull)) {
@@ -38,6 +39,10 @@ const AttendanceEntry: React.FC<AttendanceEntryProps> = ({ subType }) => {
     guest: {
       title: 'Guest Attendance',
       subtitle: 'Special Event Visitor Entry'
+    },
+    poster: {
+      title: 'Poster Participant Logout',
+      subtitle: 'Enter Student Number to complete your participation'
     }
   };
 

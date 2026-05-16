@@ -15,6 +15,12 @@ export const attendanceSchema = z.discriminatedUnion('category', [
     category: z.literal('guest'),
     name: z.string().min(2, 'Name must be at least 2 characters'),
   }),
+  z.object({
+    category: z.literal('poster'),
+    studentId: z.string()
+      .min(1, 'Student ID is required')
+      .regex(/^\d{2}-\d{4}$/, 'Format must be 00-0000 (e.g. 23-1024)'),
+  }),
 ]);
 
 export type AttendanceSchemaType = z.infer<typeof attendanceSchema>;
