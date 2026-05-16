@@ -118,11 +118,11 @@ export const submitAttendance = async (req: Request, res: Response) => {
     const isCollPres = meta?.studentRole === 'Colloquium Presenter';
 
     if (registration.email && (is3rdYear || isCollPart || isCollPres)) {
-      // Generate a Unique Verification Code (Format: SESSION-REGID-DATE)
+      // Generate a Unique Verification Code (Format: SESSION-STUDENTID-DATE)
       const datePart = `${new Date().getDate()}${(new Date().getMonth() + 1).toString().padStart(2, '0')}`;
-      const shortId = registration.id.split('-')[0].toUpperCase().slice(0, 4);
+      const identifier = (registration.external_id || registration.id.split('-')[0].toUpperCase().slice(0, 4)).replace(/\s+/g, '');
       const sessionLabel = (session.session_type || 'EVT').split(' ')[0].toUpperCase();
-      const verificationId = `${sessionLabel}-${shortId}-${datePart}`;
+      const verificationId = `${sessionLabel}-${identifier}-${datePart}`;
 
       sendAttendanceEmail(registration.email, registration.full_name, session.session_type, verificationId)
         .catch(err => console.error('Background Attendance Email Error:', err));
