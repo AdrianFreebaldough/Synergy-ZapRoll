@@ -25,7 +25,9 @@ transporter.verify((error, success) => {
 /**
  * Sends a registration success email
  */
-export const sendRegistrationEmail = async (email: string, name: string) => {
+export const sendRegistrationEmail = async (email: string, name: string, role?: string) => {
+  const isPoster = role === 'Poster Presenter';
+
   const mailOptions = {
     from: `"Synergy Event Team" <${process.env.SMTP_USER}>`,
     to: email,
@@ -45,10 +47,12 @@ export const sendRegistrationEmail = async (email: string, name: string) => {
         </div>
 
         <div style="border-left: 4px solid #f59e0b; padding-left: 15px; margin: 20px 0;">
-          <p style="font-weight: bold; color: #b45309;">⚠️ Important Check-in Notice:</p>
+          <p style="font-weight: bold; color: #b45309;">⚠️ Important Reminders:</p>
           <ul style="padding-left: 20px;">
-            <li><strong>Check-in Window:</strong> Attendance begins at <strong>8:00 AM</strong> and closes promptly at <strong>9:00 AM</strong>.</li>
-            <li><strong>Slot Policy:</strong> Please arrive early. Any pre-registered slots not claimed by <strong>9:00 AM</strong> will be released and allocated to walk-in participants.</li>
+            ${!isPoster ? `
+              <li><strong>Check-in Window:</strong> Attendance begins at <strong>8:00 AM</strong> and closes promptly at <strong>9:00 AM</strong>.</li>
+              <li><strong>Slot Policy:</strong> Please arrive early. Any pre-registered slots not claimed by <strong>9:00 AM</strong> will be released and allocated to walk-in participants.</li>
+            ` : ''}
             <li><strong>Mandatory Attendance:</strong> You need to make an attendance for both the AM and PM sessions for certificate eligibility.</li>
           </ul>
         </div>
