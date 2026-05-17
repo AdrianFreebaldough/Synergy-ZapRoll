@@ -1,4 +1,5 @@
 import React from 'react';
+import { Mail } from 'lucide-react';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useSearchParams } from 'react-router-dom';
@@ -85,7 +86,18 @@ const WalkInRegistration: React.FC = () => {
       <SubmissionStatus
         type="success"
         title="Walk-In Successful!"
-        message="Your registration is complete. You may now enter the event. Have a great day!"
+        message={
+          <>
+            <p>Your registration is complete. You may now enter the event. Have a great day!</p>
+            <div className="bg-app-success/10 border border-app-success/20 p-4 rounded-xl text-app-success flex items-start gap-3 mt-2 text-left animate-in slide-in-from-bottom-2 duration-700 delay-100 fill-mode-both">
+              <Mail className="w-5 h-5 shrink-0 mt-0.5" />
+              <div className="text-[11px] md:text-xs">
+                <p className="font-bold uppercase tracking-wide mb-1">Check Your Inbox</p>
+                <p className="opacity-90 leading-relaxed">A confirmation email containing your registration details and event guidelines has been dispatched to your provided address.</p>
+              </div>
+            </div>
+          </>
+        }
       />
     );
   }

@@ -3,7 +3,7 @@ import React from 'react';
 interface SubmissionStatusProps {
   type: 'success' | 'already-submitted' | 'capacity-full';
   title: string;
-  message: string;
+  message: React.ReactNode;
   category?: string;
   onAction?: () => void;
   actionText?: string;
@@ -49,9 +49,9 @@ const SubmissionStatus: React.FC<SubmissionStatusProps> = ({
         {title}
       </h2>
       
-      <p className="text-app-text-secondary text-sm md:text-base leading-relaxed max-w-sm mx-auto opacity-80">
+      <div className="text-app-text-secondary text-sm md:text-base leading-relaxed max-w-sm mx-auto opacity-80 flex flex-col gap-4">
         {message}
-      </p>
+      </div>
 
       <div className="mt-10 pt-8 border-t border-white/[0.04]">
         {onAction ? (
