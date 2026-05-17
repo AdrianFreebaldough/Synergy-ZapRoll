@@ -93,11 +93,11 @@ const EmployeeRegistration: React.FC = () => {
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <Input label="Full Name" {...register('name')} placeholder="Enter name" error={errors.name?.message} />
-        <Select 
-          label="Department" 
-          {...register('department')} 
-          options={DEPARTMENTS.map(d => ({ value: d, label: d }))} 
-          error={errors.department?.message} 
+        <Select
+          label="Department"
+          {...register('department')}
+          options={DEPARTMENTS.map(d => ({ value: d, label: d }))}
+          error={errors.department?.message}
         />
 
         <div className="pt-2">
