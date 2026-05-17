@@ -1,5 +1,6 @@
 import React from 'react';
 import qcuLogo from '@assets/qcuLOGONOBG.jpg';
+import synergyLogo from '@assets/SynergyLogo.png';
 import ccsLogo from '@assets/ccsLOGO.png';
 
 interface MainLayoutProps {
@@ -14,17 +15,23 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       
       {/* Header Area: Clean Professional Dual Logo */}
       <header className="relative z-10 pt-12 pb-8 flex flex-col items-center w-full px-4">
-        <div className="flex items-center justify-center gap-6 md:gap-12 animate-in fade-in zoom-in duration-1000">
+        <div className="flex items-center justify-center gap-4 md:gap-8 animate-in fade-in zoom-in duration-1000">
           <img 
             src={qcuLogo} 
             alt="QCU Logo" 
-            className="h-12 md:h-20 w-auto max-w-[100px] md:max-w-none opacity-90 transition-all hover:opacity-100 hover:scale-105"
+            className="h-10 md:h-14 w-auto max-w-[80px] md:max-w-none opacity-90 transition-all hover:opacity-100 hover:scale-105"
           />
-          <div className="h-10 md:h-12 w-px bg-app-border/50" />
+          <div className="h-8 md:h-12 w-px bg-app-border/50" />
+          <img 
+            src={synergyLogo} 
+            alt="Synergy Logo" 
+            className="h-10 md:h-14 w-auto max-w-[80px] md:max-w-none opacity-90 transition-all hover:opacity-100 hover:scale-105"
+          />
+          <div className="h-8 md:h-12 w-px bg-app-border/50" />
           <img 
             src={ccsLogo} 
             alt="CCS Logo" 
-            className="h-12 md:h-20 w-auto max-w-[100px] md:max-w-none opacity-90 transition-all hover:opacity-100 hover:scale-105"
+            className="h-10 md:h-14 w-auto max-w-[80px] md:max-w-none opacity-90 transition-all hover:opacity-100 hover:scale-105"
           />
         </div>
         <div className="mt-6 text-center">

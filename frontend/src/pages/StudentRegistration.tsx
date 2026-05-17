@@ -192,10 +192,10 @@ const StudentRegistration: React.FC = () => {
                   maxLength={7}
                   error={errors.studentId?.message}
                 />
-                <Input 
-                  label={studentRole === 'Poster Presenter' ? "Full Name" : "Representative Name"} 
-                  {...register('representativeName')} 
-                  error={errors.representativeName?.message} 
+                <Input
+                  label={studentRole === 'Poster Presenter' ? "Full Name" : "Representative Name"}
+                  {...register('representativeName')}
+                  error={errors.representativeName?.message}
                 />
                 <Input label="Group Number" {...register('groupNumber')} error={errors.groupNumber?.message} />
                 <Input label="Section" {...register('section')} placeholder="SBIT-4G" error={errors.section?.message} />

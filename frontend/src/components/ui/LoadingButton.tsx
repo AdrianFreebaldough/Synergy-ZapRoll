@@ -20,7 +20,7 @@ const LoadingButton: React.FC<LoadingButtonProps> = ({
   ...props
 }) => {
   const baseStyles = "relative flex items-center justify-center font-bold rounded-xl transition-all duration-300 uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden active:scale-[0.98]";
-  
+
   const variants = {
     primary: "bg-app-primary text-white hover:bg-app-accent shadow-lg shadow-app-primary/10",
     secondary: "bg-white/[0.05] text-white border border-white/10 hover:bg-white/[0.1]",
