@@ -66,7 +66,15 @@ const StudentRegistration: React.FC = () => {
   const onSubmit = async (data: StudentFormData) => {
     try {
       if (data.firstName && data.lastName) {
-        data.name = `${data.lastName}, ${data.firstName}${data.middleName ? ' ' + data.middleName : ''}`;
+        const toTitleCase = (str: string) => {
+          return str.trim().split(/\s+/).map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
+        };
+
+        const formattedLastName = toTitleCase(data.lastName);
+        const formattedFirstName = toTitleCase(data.firstName);
+        const formattedMiddleName = data.middleName ? toTitleCase(data.middleName) : '';
+
+        data.name = `${formattedFirstName} ${formattedMiddleName ? formattedMiddleName + ' ' : ''}${formattedLastName}`;
       }
       await submitData(data);
     } catch (err) {
@@ -206,7 +214,27 @@ const StudentRegistration: React.FC = () => {
               </div>
             )}
 
-            {(studentRole === 'Colloquium Presenter' || studentRole === 'Poster Presenter') && (
+            {studentRole === 'Poster Presenter' && (
+              <div className="space-y-4 animate-in fade-in zoom-in-95 duration-500">
+                <Input
+                  label="Student ID"
+                  {...register('studentId', { onChange: handleStudentIdChange })}
+                  placeholder="00-0000"
+                  maxLength={7}
+                  error={errors.studentId?.message}
+                />
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Input label="Last Name" {...register('lastName')} placeholder="Dela Cruz" error={errors.lastName?.message} />
+                  <Input label="First Name" {...register('firstName')} placeholder="Juan" error={errors.firstName?.message} />
+                  <Input label="Middle Name" {...register('middleName')} placeholder="Optional" error={errors.middleName?.message} />
+                </div>
+                <Input label="Group Number" {...register('groupNumber')} error={errors.groupNumber?.message} />
+                <Input label="Section" {...register('section')} placeholder="SBIT-4G" error={errors.section?.message} />
+                <Input label="Capstone Title" {...register('capstoneTitle')} error={errors.capstoneTitle?.message} />
+              </div>
+            )}
+
+            {studentRole === 'Colloquium Presenter' && (
               <div className="space-y-4 animate-in fade-in zoom-in-95 duration-500">
                 <Input
                   label="Student ID"
@@ -216,7 +244,7 @@ const StudentRegistration: React.FC = () => {
                   error={errors.studentId?.message}
                 />
                 <Input
-                  label={studentRole === 'Poster Presenter' ? "Full Name" : "Representative Name"}
+                  label="Representative Name"
                   {...register('representativeName')}
                   error={errors.representativeName?.message}
                 />

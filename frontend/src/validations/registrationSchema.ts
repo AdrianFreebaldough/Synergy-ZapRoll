@@ -89,7 +89,15 @@ export const studentSchema = baseSchema.extend({
       if (!data.lastName) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Required", path: ["lastName"] });
       if (!data.section) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Section is required", path: ["section"] });
     }
-    if (data.studentRole === 'Colloquium Presenter' || data.studentRole === 'Poster Presenter') {
+    if (data.studentRole === 'Poster Presenter') {
+      if (!data.studentId) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "ID is required", path: ["studentId"] });
+      if (!data.firstName) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Required", path: ["firstName"] });
+      if (!data.lastName) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Required", path: ["lastName"] });
+      if (!data.groupNumber) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Required", path: ["groupNumber"] });
+      if (!data.section) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Required", path: ["section"] });
+      if (!data.capstoneTitle) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Required", path: ["capstoneTitle"] });
+    }
+    if (data.studentRole === 'Colloquium Presenter') {
       if (!data.studentId) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "ID is required", path: ["studentId"] });
       if (!data.representativeName) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Required", path: ["representativeName"] });
       if (!data.groupNumber) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Required", path: ["groupNumber"] });
