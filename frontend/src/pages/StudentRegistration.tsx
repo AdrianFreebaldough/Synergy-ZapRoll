@@ -17,7 +17,8 @@ const StudentRegistration: React.FC = () => {
   const quotaId = searchParams.get('quota_id');
 
   const { execute: submitData, isSubmitting, error, success, hasAlreadySubmitted } = useSubmission(
-    (data: StudentFormData) => submitRegistration('student', { ...data, quotaId } as any)
+    (data: StudentFormData) => submitRegistration('student', { ...data, quotaId } as any),
+    { persistenceKey: 'student_registration' }
   );
 
   const {
