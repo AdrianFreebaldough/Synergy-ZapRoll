@@ -128,8 +128,11 @@ export const submitAttendance = async (req: Request, res: Response) => {
       const sessionLabel = (session.session_type || 'EVT').split(' ')[0].toUpperCase();
       const verificationId = `${sessionLabel}-${identifier}-${datePart}`;
 
-      sendAttendanceEmail(registration.email, registration.full_name, session.session_type, verificationId)
-        .catch(err => console.error('Background Attendance Email Error:', err));
+      try {
+        await sendAttendanceEmail(registration.email, registration.full_name, session.session_type, verificationId);
+      } catch (err) {
+        console.error('Background Attendance Email Error:', err);
+      }
     }
 
     return res.status(201).json({
