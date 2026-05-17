@@ -115,13 +115,14 @@ export const submitAttendance = async (req: Request, res: Response) => {
     }
 
     // 4. Trigger Attendance Email (Async)
-    // Filter: Only 3rd Years, 4th Year Colloquium Participants, and 4th Year Colloquium Presenters
+    // Filter: Only 3rd Years, 4th Year Colloquium Participants, 4th Year Colloquium Presenters, and Poster Presenters
     const meta = registration.metadata as any;
     const is3rdYear = meta?.yearLevel === '3rd Year';
     const isCollPart = meta?.studentRole === 'Colloquium Participant';
     const isCollPres = meta?.studentRole === 'Colloquium Presenter';
+    const isPosterPres = meta?.studentRole === 'Poster Presenter';
 
-    if (registration.email && (is3rdYear || isCollPart || isCollPres)) {
+    if (registration.email && (is3rdYear || isCollPart || isCollPres || isPosterPres)) {
       // Generate a Unique Verification Code (Format: SESSION-STUDENTID-DATE)
       const datePart = `${new Date().getDate()}${(new Date().getMonth() + 1).toString().padStart(2, '0')}`;
       const identifier = (registration.external_id || registration.id.split('-')[0].toUpperCase().slice(0, 4)).replace(/\s+/g, '');
