@@ -23,7 +23,8 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ category, session, toke
         return posterLogout((data as any).studentId);
       }
       return submitAttendance({ ...data, session: session as any, token });
-    }
+    },
+    { persistenceKey: `attendance_${category}_${session || 'none'}` }
   );
 
   const {
@@ -81,14 +82,18 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ category, session, toke
         message={
           <>
             Your attendance has been successfully recorded. Welcome to the event!
-            <br /><br />
-            <span className="text-app-success font-medium">
-              We have sent a confirmation email to your account. 
-              <br className="my-2" />
-              <strong className="text-white">IMPORTANT:</strong> Please keep this screen open and present it to the event marshal upon entry. Do not close this form until you have been officially verified at the door.
-              <br className="my-2" />
-              As a backup, we highly recommend taking a screenshot of this success message.
-            </span>
+            {category !== 'employee' && category !== 'guest' && (
+              <>
+                <br /><br />
+                <span className="text-app-success font-medium">
+                  We have sent a verification code to your email. 
+                  <br className="my-2" />
+                  <strong className="text-white">IMPORTANT:</strong> Please keep this screen open and present it to the event marshal upon entry. Do not close this form until you have been officially verified at the door.
+                  <br className="my-2" />
+                  As a backup, we highly recommend taking a screenshot of this success message.
+                </span>
+              </>
+            )}
           </>
         }
       />
