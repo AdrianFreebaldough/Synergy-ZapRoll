@@ -13,18 +13,25 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
   ({ label, options, error, icon, className, ...props }, ref) => {
     const [isShake, setIsShake] = useState(false);
     const [hasValue, setHasValue] = useState(false);
+    const [isFocused, setIsFocused] = useState(false);
 
     useEffect(() => {
-      if (error) {
+      if (error && !isFocused) {
         setIsShake(true);
         const timer = setTimeout(() => setIsShake(false), 400);
         return () => clearTimeout(timer);
       }
-    }, [error]);
+    }, [error, isFocused]);
 
     const handleBlur = (e: React.FocusEvent<HTMLSelectElement>) => {
+      setIsFocused(false);
       setHasValue(e.target.value !== '');
       if (props.onBlur) props.onBlur(e);
+    };
+
+    const handleFocus = (e: React.FocusEvent<HTMLSelectElement>) => {
+      setIsFocused(true);
+      if (props.onFocus) props.onFocus(e);
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -54,6 +61,7 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
             )}
             {...props}
             onBlur={handleBlur}
+            onFocus={handleFocus}
             onChange={handleChange}
           >
             <option value="" className="bg-[#0f172a] text-white">Select {label}</option>

@@ -60,6 +60,11 @@ const StudentRegistration: React.FC = () => {
     setValue('studentId', value, { shouldValidate: true });
   };
 
+  const handleGroupNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/\D/g, '');
+    setValue('groupNumber', value, { shouldValidate: true });
+  };
+
   const yearLevel = useWatch({ control, name: 'yearLevel' });
   const studentRole = useWatch({ control, name: 'studentRole' });
 
@@ -228,7 +233,13 @@ const StudentRegistration: React.FC = () => {
                   <Input label="First Name" {...register('firstName')} placeholder="Juan" error={errors.firstName?.message} />
                   <Input label="Middle Name" {...register('middleName')} placeholder="Optional" error={errors.middleName?.message} />
                 </div>
-                <Input label="Group Number" {...register('groupNumber')} error={errors.groupNumber?.message} />
+                <Input 
+                  label="Group Number" 
+                  {...register('groupNumber', { onChange: handleGroupNumberChange })} 
+                  inputMode="numeric" 
+                  pattern="[0-9]*" 
+                  error={errors.groupNumber?.message} 
+                />
                 <Input label="Section" {...register('section')} placeholder="SBIT-4G" error={errors.section?.message} />
                 <Input label="Capstone Title" {...register('capstoneTitle')} error={errors.capstoneTitle?.message} />
               </div>
@@ -248,7 +259,13 @@ const StudentRegistration: React.FC = () => {
                   {...register('representativeName')}
                   error={errors.representativeName?.message}
                 />
-                <Input label="Group Number" {...register('groupNumber')} error={errors.groupNumber?.message} />
+                <Input 
+                  label="Group Number" 
+                  {...register('groupNumber', { onChange: handleGroupNumberChange })} 
+                  inputMode="numeric" 
+                  pattern="[0-9]*" 
+                  error={errors.groupNumber?.message} 
+                />
                 <Input label="Section" {...register('section')} placeholder="SBIT-4G" error={errors.section?.message} />
                 <Input label="Capstone Title" {...register('capstoneTitle')} error={errors.capstoneTitle?.message} />
               </div>
