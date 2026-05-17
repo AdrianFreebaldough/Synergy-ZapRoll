@@ -65,6 +65,9 @@ const WalkInRegistration: React.FC = () => {
 
   const onSubmit = async (data: StudentFormData) => {
     try {
+      if (data.firstName && data.lastName) {
+        data.name = `${data.lastName}, ${data.firstName}${data.middleName ? ' ' + data.middleName : ''}`;
+      }
       await submitData(data);
     } catch (err) {
       // Error is handled by the hook
@@ -149,7 +152,11 @@ const WalkInRegistration: React.FC = () => {
               maxLength={7}
               error={errors.studentId?.message}
             />
-            <Input label="Full Name" {...register('name')} error={errors.name?.message} />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Input label="Last Name" {...register('lastName')} placeholder="Dela Cruz" error={errors.lastName?.message} />
+              <Input label="First Name" {...register('firstName')} placeholder="Juan" error={errors.firstName?.message} />
+              <Input label="Middle Name" {...register('middleName')} placeholder="Optional" error={errors.middleName?.message} />
+            </div>
             <Input label="Section" {...register('section')} placeholder="SBIT-3G" error={errors.section?.message} />
           </div>
         )}
@@ -189,7 +196,11 @@ const WalkInRegistration: React.FC = () => {
                   maxLength={7}
                   error={errors.studentId?.message}
                 />
-                <Input label="Full Name" {...register('name')} error={errors.name?.message} />
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Input label="Last Name" {...register('lastName')} placeholder="Dela Cruz" error={errors.lastName?.message} />
+                  <Input label="First Name" {...register('firstName')} placeholder="Juan" error={errors.firstName?.message} />
+                  <Input label="Middle Name" {...register('middleName')} placeholder="Optional" error={errors.middleName?.message} />
+                </div>
                 <Input label="Section" {...register('section')} placeholder="SBIT-4G" error={errors.section?.message} />
               </div>
             )}

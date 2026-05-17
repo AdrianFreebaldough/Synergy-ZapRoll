@@ -28,6 +28,9 @@ export const studentSchema = baseSchema.extend({
   email: z.string().email('Invalid email address'),
   studentId: z.string().regex(studentIdRegex, 'Format must be 00-0000').optional(),
   name: z.string().min(2, 'Name is required').optional(),
+  firstName: z.string().min(2, 'First Name is required').optional(),
+  lastName: z.string().min(2, 'Last Name is required').optional(),
+  middleName: z.string().optional(),
   section: z.string().min(1, 'Section is required').optional(),
   studentRole: z.enum(['Colloquium Participant', 'Colloquium Presenter', 'Poster Presenter']).optional(),
   representativeName: z.string().min(2, 'Representative name is required').optional(),
@@ -74,14 +77,16 @@ export const studentSchema = baseSchema.extend({
   // 2. Conditional Role Fields Validation
   if (data.yearLevel === '3rd Year') {
     if (!data.studentId) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "ID is required", path: ["studentId"] });
-    if (!data.name) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Name is required", path: ["name"] });
+    if (!data.firstName) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Required", path: ["firstName"] });
+    if (!data.lastName) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Required", path: ["lastName"] });
     if (!data.section) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Section is required", path: ["section"] });
   }
 
   if (data.yearLevel === '4th Year') {
     if (data.studentRole === 'Colloquium Participant') {
       if (!data.studentId) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "ID is required", path: ["studentId"] });
-      if (!data.name) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Name is required", path: ["name"] });
+      if (!data.firstName) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Required", path: ["firstName"] });
+      if (!data.lastName) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Required", path: ["lastName"] });
       if (!data.section) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Section is required", path: ["section"] });
     }
     if (data.studentRole === 'Colloquium Presenter' || data.studentRole === 'Poster Presenter') {
