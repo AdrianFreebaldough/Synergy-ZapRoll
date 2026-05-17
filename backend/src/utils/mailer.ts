@@ -39,7 +39,8 @@ export const sendRegistrationEmail = async (email: string, name: string, role?: 
         <p>You are officially registered for the <strong>Synergy Event</strong>. We are excited to have you!</p>
         
         <div style="background-color: #f8fafc; padding: 15px; border-radius: 8px; margin: 20px 0;">
-          <h3 style="margin-top: 0; color: #1e293b;">Event Schedule:</h3>
+          <h3 style="margin-top: 0; margin-bottom: 5px; color: #1e293b;">Event Schedule:</h3>
+          <p style="margin: 0 0 10px 0; color: #475569; font-weight: bold;">📅 May 20, 2026</p>
           <ul style="list-style: none; padding-left: 0;">
             <li>☀️ <strong>AM Session:</strong> 9:00 AM – 12:00 PM</li>
             <li>🌙 <strong>PM Session:</strong> 1:00 PM – 5:00 PM</li>
