@@ -220,8 +220,9 @@ export const registerEntry = async (req: Request, res: Response) => {
       const is3rdYear = meta?.yearLevel === '3rd Year';
       const isCollPart = meta?.studentRole === 'Colloquium Participant';
       const isCollPres = meta?.studentRole === 'Colloquium Presenter';
+      const isPoster = meta?.studentRole === 'Poster Presenter';
 
-      if (registration.email && (is3rdYear || isCollPart || isCollPres)) {
+      if (registration.email && (is3rdYear || isCollPart || isCollPres || isPoster)) {
         const datePart = `${new Date().getDate()}${(new Date().getMonth() + 1).toString().padStart(2, '0')}`;
         const identifier = (registration.external_id || registration.id.split('-')[0].toUpperCase().slice(0, 4)).replace(/\s+/g, '');
         const sessionLabel = (session.session_type || 'EVT').split(' ')[0].toUpperCase();
