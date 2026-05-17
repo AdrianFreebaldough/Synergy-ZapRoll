@@ -1,4 +1,5 @@
 import React from 'react';
+import { Mail } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { useSearchParams } from 'react-router-dom';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -62,7 +63,18 @@ const EmployeeRegistration: React.FC = () => {
       <SubmissionStatus
         type="success"
         title="Registration Confirmed"
-        message="Your faculty/staff registration has been successfully recorded. No further action is required."
+        message={
+          <>
+            <p>Your faculty/staff registration has been successfully recorded. No further action is required.</p>
+            <div className="bg-app-success/10 border border-app-success/20 p-4 rounded-xl text-app-success flex items-start gap-3 mt-2 text-left animate-in slide-in-from-bottom-2 duration-700 delay-100 fill-mode-both">
+              <Mail className="w-5 h-5 shrink-0 mt-0.5" />
+              <div className="text-[11px] md:text-xs">
+                <p className="font-bold uppercase tracking-wide mb-1">Check Your Inbox</p>
+                <p className="opacity-90 leading-relaxed">A confirmation email containing your registration details and event guidelines has been dispatched to your provided address.</p>
+              </div>
+            </div>
+          </>
+        }
       />
     );
   }

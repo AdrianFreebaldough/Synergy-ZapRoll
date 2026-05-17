@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { cn } from '../../utils/cn';
-import { ChevronDown, CheckCircle2, AlertCircle } from 'lucide-react';
+import { ChevronDown, CheckCircle, AlertCircle } from 'lucide-react';
 
 interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   label: string;
   options: { value: string; label: string }[];
   error?: string;
+  icon?: React.ReactNode;
 }
 
 const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
-  ({ label, options, error, className, ...props }, ref) => {
+  ({ label, options, error, icon, className, ...props }, ref) => {
     const [isShake, setIsShake] = useState(false);
     const [hasValue, setHasValue] = useState(false);
 
@@ -37,10 +38,16 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
           {label}
         </label>
         <div className="relative">
+          {icon && (
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-app-text-secondary pointer-events-none z-10">
+              {icon}
+            </div>
+          )}
           <select
             ref={ref}
             className={cn(
               "w-full px-4 py-2.5 text-sm glass-input pr-10 appearance-none",
+              icon && "pl-10",
               error && "border-app-danger/50 focus:border-app-danger/50",
               !error && hasValue && "border-app-success/50 focus:border-app-success/50",
               className
@@ -60,7 +67,7 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
             {error ? (
               <AlertCircle size={16} className="text-app-danger animate-in zoom-in" />
             ) : hasValue ? (
-              <CheckCircle2 size={16} className="text-app-success animate-in zoom-in" />
+              <CheckCircle size={16} className="text-app-success animate-in zoom-in" />
             ) : (
               <ChevronDown size={14} className="text-white/30 group-focus-within:text-app-primary transition-colors" />
             )}

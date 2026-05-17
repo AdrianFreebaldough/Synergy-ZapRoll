@@ -78,7 +78,17 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ category, session, toke
       <SubmissionStatus 
         type="success"
         title="Attendance Verified"
-        message="Your attendance has been successfully recorded. Welcome to the event! Enjoy the activities."
+        message={
+          <>
+            Your attendance has been successfully recorded. Welcome to the event! Enjoy the activities.
+            <br /><br />
+            <span className="text-app-success font-medium">
+              We have sent a confirmation email to your account. 
+              <br className="my-1" />
+              Please take a screenshot of this success message. If you do not receive the email, you may use this screenshot as your official attendance verification.
+            </span>
+          </>
+        }
       />
     );
   }
