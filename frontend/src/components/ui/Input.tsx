@@ -11,22 +11,26 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ label, error, icon, className, ...props }, ref) => {
     const [isShake, setIsShake] = useState(false);
-    
-    // Internal state to track if input has value for the success checkmark
-    // since this is an uncontrolled component using refs with react-hook-form
     const [hasValue, setHasValue] = useState(false);
+    const [isFocused, setIsFocused] = useState(false);
 
     useEffect(() => {
-      if (error) {
+      if (error && !isFocused) {
         setIsShake(true);
         const timer = setTimeout(() => setIsShake(false), 400);
         return () => clearTimeout(timer);
       }
-    }, [error]);
+    }, [error, isFocused]);
 
     const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+      setIsFocused(false);
       setHasValue(e.target.value.length > 0);
       if (props.onBlur) props.onBlur(e);
+    };
+
+    const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+      setIsFocused(true);
+      if (props.onFocus) props.onFocus(e);
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -56,6 +60,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             )}
             {...props}
             onBlur={handleBlur}
+            onFocus={handleFocus}
             onChange={handleChange}
           />
           <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2 pointer-events-none">

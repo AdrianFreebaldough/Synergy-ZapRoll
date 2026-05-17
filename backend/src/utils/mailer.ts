@@ -50,8 +50,8 @@ export const sendRegistrationEmail = async (email: string, name: string, role?: 
           <p style="font-weight: bold; color: #b45309;">⚠️ Important Reminders:</p>
           <ul style="padding-left: 20px;">
             ${!isPoster ? `
-              <li><strong>Check-in Window:</strong> Attendance begins at <strong>8:00 AM</strong> and closes promptly at <strong>9:00 AM</strong>.</li>
-              <li><strong>Slot Policy:</strong> Please arrive early. Any pre-registered slots not claimed by <strong>9:00 AM</strong> will be released and allocated to walk-in participants.</li>
+              <li><strong>Check-in Window:</strong> Attendance begins at <strong>8:00 AM</strong> and closes promptly at <strong>8:30 AM</strong>.</li>
+              <li><strong>Slot Policy:</strong> Please arrive early. Any pre-registered slots not claimed by <strong>8:30 AM</strong> will be released and allocated to walk-in participants.</li>
             ` : ''}
             <li><strong>Mandatory Attendance:</strong> You need to make an attendance for both the AM and PM sessions for certificate eligibility.</li>
           </ul>

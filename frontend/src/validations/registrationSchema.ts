@@ -25,7 +25,13 @@ export const guestSchema = baseSchema.extend({
 export const studentSchema = baseSchema.extend({
   category: z.literal('student'),
   yearLevel: z.enum(['3rd Year', '4th Year']),
-  email: z.string().email('Invalid email address'),
+  email: z.string().regex(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/, 'Must be a valid email (e.g., name@domain.com)').refine(val => {
+    const v = val.toLowerCase();
+    if (v.includes('@gmail') && !v.endsWith('@gmail.com')) return false;
+    if (v.includes('@yahoo') && !v.endsWith('@yahoo.com') && !v.endsWith('@yahoo.com.ph')) return false;
+    if (v.endsWith('.co') || v.endsWith('c.om') || v.endsWith('.con')) return false;
+    return true;
+  }, 'Please enter a complete and correctly spelled email (e.g., @gmail.com)'),
   studentId: z.string().regex(studentIdRegex, 'Format must be 00-0000').optional(),
   name: z.string().min(2, 'Name is required').optional(),
   firstName: z.string().min(2, 'First Name is required').optional(),
@@ -34,7 +40,7 @@ export const studentSchema = baseSchema.extend({
   section: z.string().min(1, 'Section is required').optional(),
   studentRole: z.enum(['Colloquium Participant', 'Colloquium Presenter', 'Poster Presenter']).optional(),
   representativeName: z.string().min(2, 'Representative name is required').optional(),
-  groupNumber: z.string().min(1, 'Group number is required').optional(),
+  groupNumber: z.string().regex(/^\d+$/, 'Numbers only').optional(),
   capstoneTitle: z.string().min(2, 'Capstone title is required').optional(),
 }).superRefine((data, ctx) => {
   // 1. Year Level & Section Validation
@@ -115,7 +121,13 @@ export type RegistrationFormData = EmployeeFormData | GuestFormData | StudentFor
 
 export const registrationSchema = z.object({
   fullName: z.string().min(2, 'Full name is required'),
-  email: z.string().email('Invalid email address'),
+  email: z.string().regex(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/, 'Must be a valid email (e.g., name@domain.com)').refine(val => {
+    const v = val.toLowerCase();
+    if (v.includes('@gmail') && !v.endsWith('@gmail.com')) return false;
+    if (v.includes('@yahoo') && !v.endsWith('@yahoo.com') && !v.endsWith('@yahoo.com.ph')) return false;
+    if (v.endsWith('.co') || v.endsWith('c.om') || v.endsWith('.con')) return false;
+    return true;
+  }, 'Please enter a complete and correctly spelled email (e.g., @gmail.com)'),
   phone: z.string().min(7, 'Invalid phone number'),
   organization: z.string().min(2, 'Organization is required'),
   category: z.string().optional(),
