@@ -166,9 +166,12 @@ export const registerEntry = async (req: Request, res: Response) => {
     if (registration.email) {
       console.log('Calling sendRegistrationEmail...');
       const role = (registration.metadata as any)?.studentRole;
-      sendRegistrationEmail(registration.email, registration.full_name, role)
-        .then(() => console.log('✅ Mailer process initiated'))
-        .catch(err => console.error('❌ Background Email Error:', err));
+      try {
+        await sendRegistrationEmail(registration.email, registration.full_name, role);
+        console.log('✅ Mailer process initiated');
+      } catch (err) {
+        console.error('❌ Background Email Error:', err);
+      }
     }
     console.log('---------------------------');
 
@@ -224,8 +227,11 @@ export const registerEntry = async (req: Request, res: Response) => {
         const sessionLabel = (session.session_type || 'EVT').split(' ')[0].toUpperCase();
         const verificationId = `${sessionLabel}-${identifier}-${datePart}`;
 
-        sendAttendanceEmail(registration.email, registration.full_name, session.session_type, verificationId)
-          .catch(err => console.error('Background Walk-in Attendance Email Error:', err));
+        try {
+          await sendAttendanceEmail(registration.email, registration.full_name, session.session_type, verificationId);
+        } catch (err) {
+          console.error('Background Walk-in Attendance Email Error:', err);
+        }
       }
     }
 
