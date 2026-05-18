@@ -32,16 +32,16 @@ export const studentSchema = baseSchema.extend({
     if (v.endsWith('.co') || v.endsWith('c.om') || v.endsWith('.con')) return false;
     return true;
   }, 'Please enter a complete and correctly spelled email (e.g., @gmail.com)'),
-  studentId: z.string().regex(studentIdRegex, 'Format must be 00-0000').optional(),
-  name: z.string().min(2, 'Name is required').optional(),
-  firstName: z.string().min(2, 'First Name is required').optional(),
-  lastName: z.string().min(2, 'Last Name is required').optional(),
-  middleName: z.string().optional(),
-  section: z.string().min(1, 'Section is required').optional(),
+  studentId: z.string().regex(studentIdRegex, 'Format must be 00-0000').optional().or(z.literal('')),
+  name: z.string().min(2, 'Name is required').optional().or(z.literal('')),
+  firstName: z.string().min(2, 'First Name is required').optional().or(z.literal('')),
+  lastName: z.string().min(2, 'Last Name is required').optional().or(z.literal('')),
+  middleName: z.string().optional().or(z.literal('')),
+  section: z.string().min(1, 'Section is required').optional().or(z.literal('')),
   studentRole: z.enum(['Colloquium Participant', 'Colloquium Presenter', 'Poster Presenter']).optional(),
-  representativeName: z.string().min(2, 'Representative name is required').optional(),
-  groupNumber: z.string().regex(/^\d+$/, 'Numbers only').optional(),
-  capstoneTitle: z.string().min(2, 'Capstone title is required').optional(),
+  representativeName: z.string().min(2, 'Representative name is required').optional().or(z.literal('')),
+  groupNumber: z.string().regex(/^\d+$/, 'Numbers only').optional().or(z.literal('')),
+  capstoneTitle: z.string().min(2, 'Capstone title is required').optional().or(z.literal('')),
   isEdit: z.boolean().optional(),
 }).superRefine((data, ctx) => {
   // If editing details or adding a second role, skip strict refinement checks to prevent blocking hidden fields
