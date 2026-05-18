@@ -110,7 +110,7 @@ export const registerEntry = async (req: Request, res: Response) => {
     // We check if this email OR student ID is already registered for THIS event
     const { data: existingReg } = await supabase
       .from('registrations')
-      .select('id, email, external_id, metadata, quota_id')
+      .select('id, full_name, email, external_id, metadata, quota_id')
       .eq('event_id', targetEventId)
       .filter('id', 'not.is', null) // Dummy filter to start the query
       .or(
@@ -118,20 +118,62 @@ export const registerEntry = async (req: Request, res: Response) => {
       )
       .maybeSingle();
 
-    const isEdit = req.body.isEdit === true;
+    let isEdit = req.body.isEdit === true;
 
     if (existingReg) {
       const isEmailConflict = email && existingReg.email === email;
       const isIdConflict = externalId && existingReg.external_id === externalId;
 
       if (isEmailConflict || isIdConflict) {
-        if (!isEdit) {
+        const prevMeta = existingReg.metadata as any || {};
+        
+        const newFirst = String(otherData.firstName || '').trim().toLowerCase();
+        const oldFirst = String(prevMeta.firstName || '').trim().toLowerCase();
+        
+        const newLast = String(otherData.lastName || '').trim().toLowerCase();
+        const oldLast = String(prevMeta.lastName || '').trim().toLowerCase();
+
+        const newMiddle = String(otherData.middleName || '').trim().toLowerCase();
+        const oldMiddle = String(prevMeta.middleName || '').trim().toLowerCase();
+
+        const newYear = String(otherData.yearLevel || '').trim().toLowerCase();
+        const oldYear = String(prevMeta.yearLevel || '').trim().toLowerCase();
+
+        const newSection = String(otherData.section || '').trim().toLowerCase();
+        const oldSection = String(prevMeta.section || '').trim().toLowerCase();
+
+        const newEmail = String(email || '').trim().toLowerCase();
+        const oldEmail = String(existingReg.email || '').trim().toLowerCase();
+
+        const newId = String(externalId || '').trim().toLowerCase();
+        const oldId = String(existingReg.external_id || '').trim().toLowerCase();
+
+        // Check name parity (handling split names and legacy single string names)
+        const newNameStr = String(finalName || '').trim().toLowerCase().replace(/\s+/g, ' ');
+        const oldNameStr = String(existingReg.full_name || '').trim().toLowerCase().replace(/\s+/g, ' ');
+        const isNameMatch = oldFirst && oldLast ? (newFirst === oldFirst && newLast === oldLast) : newNameStr === oldNameStr;
+
+        const isExactMatch = 
+          isNameMatch &&
+          newMiddle === oldMiddle &&
+          newYear === oldYear &&
+          newSection === oldSection &&
+          newEmail === oldEmail &&
+          newId === oldId;
+
+        if (!isEdit && !isExactMatch) {
           return res.status(400).json({
             error: 'Already Registered',
             message: isEmailConflict
               ? `The email "${email}" is already registered for this event.`
               : `The ID "${externalId}" is already registered for this event.`
           });
+        }
+
+        // If they match exactly, we accept their new entry and just update their existing row in database!
+        if (isExactMatch) {
+          isEdit = true;
+          req.body.isEdit = true;
         }
       }
     }

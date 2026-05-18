@@ -125,24 +125,51 @@ const StudentRegistration: React.FC = () => {
       const isDualRoleAddition = isEditMode && !isEditingOriginal;
       setSubmittedAsEdit(isDualRoleAddition);
 
-      await submitData({ ...data, isEdit: isEditMode } as any);
+      const response = await submitData({ ...data, isEdit: isEditMode } as any);
 
       // Save details to localStorage upon successful registration
-      // If they are adding a second role, we merge them. If they are just editing their original entry, we keep it as is.
-      let finalSavedRoles: string[] = [];
-      if (isDualRoleAddition) {
-        finalSavedRoles = ["Poster Presenter", data.studentRole || ""].filter(Boolean);
+      // We synchronize directly with the backend's saved record to guarantee perfect data parity!
+      if (response && response.data) {
+        const reg = response.data;
+        const meta = reg.metadata || {};
+        
+        const nameParts = (reg.full_name || '').split(' ');
+        const firstName = meta.firstName || nameParts[0] || '';
+        const lastName = meta.lastName || nameParts[nameParts.length - 1] || '';
+        const middleName = meta.middleName || (nameParts.length > 2 ? nameParts.slice(1, nameParts.length - 1).join(' ') : '');
+
+        const savedPayload = {
+          firstName,
+          lastName,
+          middleName,
+          email: reg.email || '',
+          studentId: reg.external_id || '',
+          yearLevel: meta.yearLevel || data.yearLevel || '',
+          studentRole: meta.studentRole || [data.studentRole].filter(Boolean),
+          section: meta.section || data.section || '',
+          groupNumber: meta.groupNumber || data.groupNumber || '',
+          representativeName: meta.representativeName || data.representativeName || '',
+          capstoneTitle: meta.capstoneTitle || data.capstoneTitle || ''
+        };
+
+        localStorage.setItem('student_registration_data', JSON.stringify(savedPayload));
       } else {
-        const currentRole = data.studentRole || "";
-        const roleArray = Array.isArray(currentRole) ? currentRole : [currentRole];
-        finalSavedRoles = roleArray.filter(Boolean);
+        let finalSavedRoles: string[] = [];
+        if (isDualRoleAddition) {
+          finalSavedRoles = ["Poster Presenter", data.studentRole || ""].filter(Boolean);
+        } else {
+          const currentRole = data.studentRole || "";
+          const roleArray = Array.isArray(currentRole) ? currentRole : [currentRole];
+          finalSavedRoles = roleArray.filter(Boolean);
+        }
+
+        const savedPayload = {
+          ...data,
+          studentRole: finalSavedRoles
+        };
+        localStorage.setItem('student_registration_data', JSON.stringify(savedPayload));
       }
 
-      const savedPayload = {
-        ...data,
-        studentRole: finalSavedRoles
-      };
-      localStorage.setItem('student_registration_data', JSON.stringify(savedPayload));
       setIsEditingOriginal(false);
     } catch (err) {
       // Error is handled by the hook
