@@ -24,7 +24,8 @@ export const useSubmission = <T, R>(
 
   const execute = useCallback(
     async (data: T) => {
-      if (isSubmitting || success || hasAlreadySubmitted) return;
+      const isEdit = (data as any)?.isEdit === true;
+      if (isSubmitting || success || (hasAlreadySubmitted && !isEdit)) return;
 
       setIsSubmitting(true);
       setError(null);
