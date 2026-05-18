@@ -145,22 +145,25 @@ export const registerEntry = async (req: Request, res: Response) => {
     };
 
     // 4. Insert or Update (Upsert) into the unified registrations table (Allows editing registration details)
+    const upsertRow: any = {
+      event_id: targetEventId,
+      full_name: finalName,
+      email: email || null,
+      external_id: externalId,
+      quota_id: isPoster ? null : (quotaId || null),
+      metadata: metadata,
+      status: 'registered',
+      reg_type: req.body.isWalkIn ? 'walk-in' : 'pre-reg',
+      created_at: isEdit && existingReg ? undefined : new Date().toISOString() // Preserve original creation date on edits
+    };
+
+    if (isEdit && existingReg) {
+      upsertRow.id = existingReg.id;
+    }
+
     const { data: result, error } = await supabase
       .from('registrations')
-      .upsert([
-        {
-          id: isEdit && existingReg ? existingReg.id : undefined, // CRITICAL: Only match and overwrite ID if explicitly editing!
-          event_id: targetEventId,
-          full_name: finalName,
-          email: email || null,
-          external_id: externalId,
-          quota_id: isPoster ? null : (quotaId || null),
-          metadata: metadata,
-          status: 'registered',
-          reg_type: req.body.isWalkIn ? 'walk-in' : 'pre-reg',
-          created_at: isEdit && existingReg ? undefined : new Date().toISOString() // Preserve original creation date on edits
-        }
-      ])
+      .upsert([upsertRow])
       .select();
 
     if (error) {
