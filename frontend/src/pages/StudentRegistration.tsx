@@ -25,6 +25,7 @@ const section4thYearOptions = Array.from({ length: 18 }, (_, i) => {
 const StudentRegistration: React.FC = () => {
   const [searchParams] = useSearchParams();
   const quotaId = searchParams.get('quota_id');
+  const is3rdYearDisabled = new Date() < new Date('2026-05-19T10:00:00+08:00');
 
   const { execute: submitData, isSubmitting, error, success, hasAlreadySubmitted } = useSubmission(
     (data: StudentFormData) => submitRegistration('student', { ...data, quotaId } as any),
@@ -161,7 +162,14 @@ const StudentRegistration: React.FC = () => {
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <Select
           label="Year Level"
-          options={[{ value: '3rd Year', label: '3rd Year' }, { value: '4th Year', label: '4th Year' }]}
+          options={[
+            { 
+              value: '3rd Year', 
+              label: `3rd Year ${is3rdYearDisabled ? '(Opens May 19, 10:00 AM)' : ''}`, 
+              disabled: is3rdYearDisabled 
+            }, 
+            { value: '4th Year', label: '4th Year' }
+          ]}
           {...register('yearLevel')}
           error={errors.yearLevel?.message}
         />

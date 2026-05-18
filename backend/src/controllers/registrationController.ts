@@ -6,6 +6,17 @@ export const registerEntry = async (req: Request, res: Response) => {
   const { category } = req.params;
   const { full_name, email, name, quotaId, ...otherData } = req.body;
 
+  // Secure time-lock for 3rd Year Students (Enforce until May 19, 2026, 10:00 AM GMT+8)
+  if (category === 'student' && otherData.yearLevel === '3rd Year') {
+    const openTime = new Date('2026-05-19T10:00:00+08:00');
+    if (new Date() < openTime) {
+      return res.status(403).json({
+        error: 'Registration Not Open',
+        message: 'Registration for 3rd Year students is locked until May 19, 2026, at 10:00 AM.'
+      });
+    }
+  }
+
   try {
     // 0. Auto-Fetch the latest Event ID (Production Plan)
     const { data: latestEvent, error: eventError } = await supabase

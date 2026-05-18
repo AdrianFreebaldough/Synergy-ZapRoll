@@ -4,7 +4,7 @@ import { ChevronDown, CheckCircle, AlertCircle } from 'lucide-react';
 
 interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   label: string;
-  options: { value: string; label: string }[];
+  options: { value: string; label: string; disabled?: boolean }[];
   error?: string;
   icon?: React.ReactNode;
 }
@@ -66,7 +66,12 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
           >
             <option value="" className="bg-[#0f172a] text-white">Select {label}</option>
             {options.map((opt) => (
-              <option key={opt.value} value={opt.value} className="bg-[#0f172a] text-white">
+              <option 
+                key={opt.value} 
+                value={opt.value} 
+                disabled={opt.disabled} 
+                className={cn("bg-[#0f172a] text-white", opt.disabled && "text-white/40")}
+              >
                 {opt.label}
               </option>
             ))}
