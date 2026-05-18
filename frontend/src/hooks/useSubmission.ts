@@ -12,7 +12,10 @@ export const useSubmission = <T, R>(
 ) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(() => {
+  const [success, setSuccess] = useState(false);
+  
+  // Track if they had already submitted prior to this session
+  const [hasAlreadySubmitted, setHasAlreadySubmitted] = useState(() => {
     if (options.persistenceKey) {
       return localStorage.getItem(`submitted_${options.persistenceKey}`) === 'true';
     }
@@ -21,7 +24,7 @@ export const useSubmission = <T, R>(
 
   const execute = useCallback(
     async (data: T) => {
-      if (isSubmitting || success) return;
+      if (isSubmitting || success || hasAlreadySubmitted) return;
 
       setIsSubmitting(true);
       setError(null);
@@ -43,13 +46,14 @@ export const useSubmission = <T, R>(
         setIsSubmitting(false);
       }
     },
-    [isSubmitting, success, submitFn, options]
+    [isSubmitting, success, hasAlreadySubmitted, submitFn, options]
   );
 
   const reset = useCallback(() => {
     setIsSubmitting(false);
     setError(null);
     setSuccess(false);
+    setHasAlreadySubmitted(false);
     if (options.persistenceKey) {
       localStorage.removeItem(`submitted_${options.persistenceKey}`);
     }
@@ -60,7 +64,7 @@ export const useSubmission = <T, R>(
     isSubmitting,
     error,
     success,
-    hasAlreadySubmitted: success && options.persistenceKey ? localStorage.getItem(`submitted_${options.persistenceKey}`) === 'true' : false,
+    hasAlreadySubmitted,
     reset,
   };
 };
