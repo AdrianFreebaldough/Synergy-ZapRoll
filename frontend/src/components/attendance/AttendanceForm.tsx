@@ -87,6 +87,9 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ category, session, toke
                 <br /><br />
                 <span className="text-app-success font-medium">
                   We have sent a verification code to your email. 
+                  <span className="block mt-1 text-[11px] text-app-success/80 font-medium italic">
+                    (If you do not see it in your inbox shortly, please make sure to check your Spam or Junk folder.)
+                  </span>
                   <br className="my-2" />
                   <strong className="text-white">IMPORTANT:</strong> Please keep this screen open and present it to the event marshal upon entry. Do not close this form until you have been officially verified at the door.
                   <br className="my-2" />
