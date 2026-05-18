@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Mail } from 'lucide-react';
 import { useForm, useWatch } from 'react-hook-form';
 import { useSearchParams } from 'react-router-dom';
@@ -8,7 +8,7 @@ import { useSubmission } from '../hooks/useSubmission';
 import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
 import LoadingButton from '../components/ui/LoadingButton';
-import { submitRegistration } from '../services/registrationService';
+import { submitRegistration, fetchRegistrationDetails } from '../services/registrationService';
 
 import SubmissionStatus from '../components/ui/SubmissionStatus';
 
@@ -27,8 +27,15 @@ const StudentRegistration: React.FC = () => {
   const quotaId = searchParams.get('quota_id');
   const is3rdYearDisabled = new Date() < new Date('2026-05-19T10:00:00+08:00');
 
-  const { execute: submitData, isSubmitting, error, success, hasAlreadySubmitted } = useSubmission(
-    (data: StudentFormData) => submitRegistration('student', { ...data, quotaId } as any),
+  // Edit Mode States
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [showLookupGate, setShowLookupGate] = useState(false);
+  const [lookupStudentId, setLookupStudentId] = useState('');
+  const [isVerifyingLookup, setIsVerifyingLookup] = useState(false);
+  const [lookupError, setLookupError] = useState<string | null>(null);
+
+  const { execute: submitData, isSubmitting, error, success, hasAlreadySubmitted, reset } = useSubmission(
+    (data: StudentFormData & { isEdit?: boolean }) => submitRegistration('student', { ...data, quotaId } as any),
     { persistenceKey: 'student_registration' }
   );
 
@@ -93,9 +100,57 @@ const StudentRegistration: React.FC = () => {
 
         data.name = `${formattedFirstName} ${formattedMiddleName ? formattedMiddleName + ' ' : ''}${formattedLastName}`;
       }
-      await submitData(data);
+      await submitData({ ...data, isEdit: isEditMode } as any);
+
+      // Save details to localStorage upon successful registration
+      localStorage.setItem('student_registration_data', JSON.stringify(data));
+      setIsEditMode(false);
     } catch (err) {
       // Error is handled by the hook
+    }
+  };
+
+  const handleEditRegistrationClick = () => {
+    const savedData = localStorage.getItem('student_registration_data');
+    if (savedData) {
+      try {
+        const parsed = JSON.parse(savedData);
+        Object.entries(parsed).forEach(([key, val]) => {
+          setValue(key as any, val, { shouldValidate: true });
+        });
+        setIsEditMode(true);
+        reset();
+        return;
+      } catch (e) {
+        console.error('Failed to parse cached details:', e);
+      }
+    }
+    setShowLookupGate(true);
+    reset();
+  };
+
+  const handleVerifyLookup = async () => {
+    if (lookupStudentId.length < 7) return;
+    setIsVerifyingLookup(true);
+    setLookupError(null);
+    try {
+      const response = await fetchRegistrationDetails(lookupStudentId);
+      if (response.success && response.data) {
+        Object.entries(response.data).forEach(([key, val]) => {
+          setValue(key as any, val, { shouldValidate: true });
+        });
+        setIsEditMode(true);
+        setShowLookupGate(false);
+        localStorage.setItem('student_registration_data', JSON.stringify(response.data));
+      } else {
+        setLookupError('Could not retrieve your registration details. Please verify your Student ID.');
+      }
+    } catch (err: any) {
+      console.error('Verify lookup error:', err);
+      const errMsg = err.response?.data?.message || err.response?.data?.error || 'Registration not found for this Student ID.';
+      setLookupError(errMsg);
+    } finally {
+      setIsVerifyingLookup(false);
     }
   };
 
@@ -104,7 +159,9 @@ const StudentRegistration: React.FC = () => {
       <SubmissionStatus
         type="already-submitted"
         title="Already Registered"
-        message="Our system has already received your student registration. Duplicate entries are not allowed."
+        message="Our system has already received your student registration. Duplicate entries are not allowed. If you need to correct any details, you can edit your submission below."
+        onAction={handleEditRegistrationClick}
+        actionText="Edit Registration"
       />
     );
   }
@@ -146,8 +203,99 @@ const StudentRegistration: React.FC = () => {
     );
   }
 
+  if (showLookupGate) {
+    return (
+      <div className="max-w-[500px] mx-auto pb-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <div className="glass-card overflow-hidden border-t-8 border-t-app-primary shadow-2xl">
+          <div className="p-6 md:p-8 border-b border-white/[0.04] bg-white/[0.01]">
+            <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight leading-tight">
+              Verify Registration
+            </h1>
+            <p className="mt-2 text-app-text-secondary text-xs leading-relaxed opacity-80">
+              Enter your Student ID to retrieve and edit your registration details.
+            </p>
+          </div>
+
+          <div className="p-6 md:p-8 space-y-4">
+            <div className="space-y-1.5">
+              <label className="block text-sm font-semibold text-white/90">
+                Student ID <span className="text-app-danger">*</span>
+              </label>
+              <input
+                type="text"
+                value={lookupStudentId}
+                onChange={(e) => {
+                  let val = e.target.value.replace(/[^0-9]/g, '');
+                  if (val.length > 6) val = val.slice(0, 6);
+                  if (val.length > 2) {
+                    val = val.slice(0, 2) + '-' + val.slice(2);
+                  }
+                  setLookupStudentId(val);
+                  setLookupError(null);
+                }}
+                onKeyDown={async (e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    await handleVerifyLookup();
+                  }
+                }}
+                className="w-full glass-input px-3.5 py-3 text-sm text-center tracking-[0.3em] font-mono"
+                placeholder="00-0000"
+                maxLength={7}
+                autoFocus
+              />
+            </div>
+
+            {lookupError && (
+              <div className="p-4 bg-app-danger/10 border border-app-danger/20 rounded-xl animate-in slide-in-from-top-2 duration-300">
+                <p className="text-app-danger text-xs leading-relaxed text-center">
+                  {lookupError}
+                </p>
+              </div>
+            )}
+          </div>
+
+          <div className="p-6 md:p-8 bg-white/[0.02] border-t border-white/[0.04] flex gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                setShowLookupGate(false);
+                reset();
+              }}
+              className="flex-1 px-4 py-3 bg-white/[0.04] hover:bg-white/[0.08] text-white rounded-xl font-semibold text-sm transition-all border border-white/[0.08]"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleVerifyLookup}
+              disabled={isVerifyingLookup || lookupStudentId.length < 7}
+              className="flex-1 px-4 py-3 bg-app-primary hover:bg-app-accent disabled:opacity-50 text-white rounded-xl font-semibold text-sm transition-all shadow-lg"
+            >
+              {isVerifyingLookup ? 'Verifying...' : 'Verify ID'}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="glass-card p-6 md:p-8 transition-all duration-500">
+      {isEditMode && (
+        <div className="mb-6 p-4 glass-card border-l-4 border-l-app-warning bg-app-warning/10 text-app-warning animate-in slide-in-from-top-2 duration-300">
+          <div className="flex items-start gap-3">
+            <span className="text-base leading-none">📝</span>
+            <div>
+              <p className="font-bold text-xs uppercase tracking-wider">Registration Edit Mode</p>
+              <p className="text-[10px] text-app-text-secondary mt-0.5 leading-relaxed">
+                You are editing your previously submitted registration details. Submitting will update your original registration record.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="mb-6">
         <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight">Student Entry</h2>
         <p className="text-app-text-secondary text-[10px] md:text-xs mt-1 uppercase tracking-widest font-medium">Registration Details</p>
@@ -163,11 +311,11 @@ const StudentRegistration: React.FC = () => {
         <Select
           label="Year Level"
           options={[
-            { 
-              value: '3rd Year', 
-              label: `3rd Year ${is3rdYearDisabled ? '(Opens May 19, 10:00 AM)' : ''}`, 
-              disabled: is3rdYearDisabled 
-            }, 
+            {
+              value: '3rd Year',
+              label: `3rd Year ${is3rdYearDisabled ? '(Opens May 19, 10:00 AM)' : ''}`,
+              disabled: is3rdYearDisabled
+            },
             { value: '4th Year', label: '4th Year' }
           ]}
           {...register('yearLevel')}
@@ -195,11 +343,11 @@ const StudentRegistration: React.FC = () => {
               <Input label="First Name" {...register('firstName')} placeholder="Juan" error={errors.firstName?.message} />
               <Input label="Middle Name" {...register('middleName')} placeholder="Optional" error={errors.middleName?.message} />
             </div>
-            <Select 
-              label="Section" 
-              options={section3rdYearOptions} 
-              {...register('section')} 
-              error={errors.section?.message} 
+            <Select
+              label="Section"
+              options={section3rdYearOptions}
+              {...register('section')}
+              error={errors.section?.message}
             />
           </div>
         )}
@@ -244,11 +392,11 @@ const StudentRegistration: React.FC = () => {
                   <Input label="First Name" {...register('firstName')} placeholder="Juan" error={errors.firstName?.message} />
                   <Input label="Middle Name" {...register('middleName')} placeholder="Optional" error={errors.middleName?.message} />
                 </div>
-                <Select 
-                  label="Section" 
-                  options={section4thYearOptions} 
-                  {...register('section')} 
-                  error={errors.section?.message} 
+                <Select
+                  label="Section"
+                  options={section4thYearOptions}
+                  {...register('section')}
+                  error={errors.section?.message}
                 />
               </div>
             )}
@@ -267,18 +415,18 @@ const StudentRegistration: React.FC = () => {
                   <Input label="First Name" {...register('firstName')} placeholder="Juan" error={errors.firstName?.message} />
                   <Input label="Middle Name" {...register('middleName')} placeholder="Optional" error={errors.middleName?.message} />
                 </div>
-                <Input 
-                  label="Group Number" 
-                  {...register('groupNumber', { onChange: handleGroupNumberChange })} 
-                  inputMode="numeric" 
-                  pattern="[0-9]*" 
-                  error={errors.groupNumber?.message} 
+                <Input
+                  label="Group Number"
+                  {...register('groupNumber', { onChange: handleGroupNumberChange })}
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  error={errors.groupNumber?.message}
                 />
-                <Select 
-                  label="Section" 
-                  options={section4thYearOptions} 
-                  {...register('section')} 
-                  error={errors.section?.message} 
+                <Select
+                  label="Section"
+                  options={section4thYearOptions}
+                  {...register('section')}
+                  error={errors.section?.message}
                 />
                 <Input label="Capstone Title" {...register('capstoneTitle')} error={errors.capstoneTitle?.message} />
               </div>
@@ -298,18 +446,18 @@ const StudentRegistration: React.FC = () => {
                   {...register('representativeName')}
                   error={errors.representativeName?.message}
                 />
-                <Input 
-                  label="Group Number" 
-                  {...register('groupNumber', { onChange: handleGroupNumberChange })} 
-                  inputMode="numeric" 
-                  pattern="[0-9]*" 
-                  error={errors.groupNumber?.message} 
+                <Input
+                  label="Group Number"
+                  {...register('groupNumber', { onChange: handleGroupNumberChange })}
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  error={errors.groupNumber?.message}
                 />
-                <Select 
-                  label="Section" 
-                  options={section4thYearOptions} 
-                  {...register('section')} 
-                  error={errors.section?.message} 
+                <Select
+                  label="Section"
+                  options={section4thYearOptions}
+                  {...register('section')}
+                  error={errors.section?.message}
                 />
                 <Input label="Capstone Title" {...register('capstoneTitle')} error={errors.capstoneTitle?.message} />
               </div>

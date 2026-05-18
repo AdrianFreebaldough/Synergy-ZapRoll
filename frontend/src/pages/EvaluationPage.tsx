@@ -103,7 +103,7 @@ const EvaluationPage: React.FC = () => {
     } catch (err: any) {
       const errData = err.response?.data;
       const msg = errData?.message || errData?.error || 'Verification failed';
-      
+
       // If backend says already submitted, block them immediately
       if (msg.toLowerCase().includes('already submitted')) {
         setHasAlreadySubmitted(true);
