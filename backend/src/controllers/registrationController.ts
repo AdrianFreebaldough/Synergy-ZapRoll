@@ -110,7 +110,7 @@ export const registerEntry = async (req: Request, res: Response) => {
     // We check if this email OR student ID is already registered for THIS event
     const { data: existingReg } = await supabase
       .from('registrations')
-      .select('id, email, external_id')
+      .select('id, email, external_id, metadata, quota_id')
       .eq('event_id', targetEventId)
       .filter('id', 'not.is', null) // Dummy filter to start the query
       .or(
@@ -136,9 +136,33 @@ export const registerEntry = async (req: Request, res: Response) => {
       }
     }
 
+    // Extract previous roles for merging if in edit mode
+    let previousRoles: string[] = [];
+    if (isEdit && existingReg) {
+      const prevMeta = existingReg.metadata as any;
+      if (prevMeta && prevMeta.studentRole) {
+        previousRoles = Array.isArray(prevMeta.studentRole)
+          ? prevMeta.studentRole
+          : [prevMeta.studentRole];
+      }
+    }
+
+    const currentRole = otherData.studentRole || otherData.registered_category;
+    let finalRoles: string[] = [];
+
+    if (previousRoles.length > 0) {
+      finalRoles = [...previousRoles];
+      if (currentRole && !finalRoles.includes(currentRole)) {
+        finalRoles.push(currentRole);
+      }
+    } else {
+      finalRoles = currentRole ? [currentRole] : [];
+    }
+
     // 3. Bundle metadata
     const metadata = {
       ...otherData,
+      studentRole: finalRoles, // Structurally consistent JSON array
       registered_category: category,
       registration_source: req.body.isWalkIn ? 'on_site' : 'web_portal',
       reg_type: req.body.isWalkIn ? 'walk-in' : 'pre-reg'
@@ -181,8 +205,8 @@ export const registerEntry = async (req: Request, res: Response) => {
     console.log('Registration Success! Email found:', registration.email);
     console.log('Name:', registration.full_name);
 
-    // 4.1 Trigger Registration Email (Async)
-    if (registration.email) {
+    // 4.1 Trigger Registration Email (Async) - Skip on dual role updates (isEdit === true)
+    if (registration.email && !isEdit) {
       console.log('Calling sendRegistrationEmail...');
       const role = (registration.metadata as any)?.studentRole;
       try {
