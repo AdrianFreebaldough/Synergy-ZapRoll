@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 
-interface UseSubmissionOptions<T, R> {
+interface UseSubmissionOptions<R> {
   onSuccess?: (result: R) => void;
   onError?: (error: string) => void;
   persistenceKey?: string;
@@ -8,7 +8,7 @@ interface UseSubmissionOptions<T, R> {
 
 export const useSubmission = <T, R>(
   submitFn: (data: T) => Promise<R>,
-  options: UseSubmissionOptions<T, R> = {}
+  options: UseSubmissionOptions<R> = {}
 ) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);

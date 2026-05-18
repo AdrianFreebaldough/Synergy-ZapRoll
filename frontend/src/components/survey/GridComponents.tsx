@@ -56,7 +56,7 @@ export const LikertTable: React.FC<QuestionProps> = ({ question }) => {
 };
 
 export const GridTable: React.FC<QuestionProps> = ({ question }) => {
-  const { register, formState: { errors } } = useFormContext();
+  const { register } = useFormContext();
   const rows = question.config?.rows || [];
   const cols = question.config?.cols || [];
   const isCheckbox = question.type === 'grid_checkbox';
