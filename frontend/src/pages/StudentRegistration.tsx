@@ -66,7 +66,7 @@ const StudentRegistration: React.FC = () => {
     formState: { errors },
   } = useForm<StudentFormData>({
     resolver: zodResolver(studentSchema),
-    defaultValues: { category: 'student' }
+    defaultValues: { category: 'student', isEdit: false }
   });
 
 
@@ -176,6 +176,10 @@ const StudentRegistration: React.FC = () => {
     }
   };
 
+  const onInvalid = (errors: any) => {
+    console.error('❌ React Hook Form Validation Errors:', errors);
+  };
+
   const handleEditRegistrationClick = () => {
     const savedData = localStorage.getItem('student_registration_data');
     if (savedData) {
@@ -195,6 +199,7 @@ const StudentRegistration: React.FC = () => {
     }
     setIsEditMode(true);
     setIsEditingOriginal(true);
+    setValue('isEdit', true, { shouldValidate: true });
   };
 
   // Enforce duplicate check and provide options for Poster Presenters
@@ -228,6 +233,7 @@ const StudentRegistration: React.FC = () => {
                     }
                     setIsEditMode(true);
                     setIsEditingOriginal(false);
+                    setValue('isEdit', true, { shouldValidate: true });
                     setValue('studentRole', 'Colloquium Participant', { shouldValidate: true });
                   }}
                   className="text-[10px] md:text-[11px] font-bold uppercase tracking-[0.3em] text-app-primary hover:text-app-accent transition-all hover:scale-105 active:scale-95 py-2 px-4"
@@ -351,7 +357,7 @@ const StudentRegistration: React.FC = () => {
       )}
 
       {isDualRoleMode ? (
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 animate-in fade-in duration-500">
+        <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="space-y-6 animate-in fade-in duration-500">
 
           <div className="space-y-4">
             <Select
@@ -418,7 +424,7 @@ const StudentRegistration: React.FC = () => {
           </div>
         </form>
       ) : (
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="space-y-4">
           <Select
             label="Year Level"
             options={[

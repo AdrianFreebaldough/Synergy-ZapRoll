@@ -42,7 +42,11 @@ export const studentSchema = baseSchema.extend({
   representativeName: z.string().min(2, 'Representative name is required').optional(),
   groupNumber: z.string().regex(/^\d+$/, 'Numbers only').optional(),
   capstoneTitle: z.string().min(2, 'Capstone title is required').optional(),
+  isEdit: z.boolean().optional(),
 }).superRefine((data, ctx) => {
+  // If editing details or adding a second role, skip strict refinement checks to prevent blocking hidden fields
+  if (data.isEdit) return;
+
   // 1. Year Level & Section Validation
   if (data.yearLevel === '3rd Year' && data.section && !data.section.includes('3')) {
     ctx.addIssue({
