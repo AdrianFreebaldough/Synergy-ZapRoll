@@ -1,7 +1,7 @@
 import React from 'react';
 import { useFormContext } from 'react-hook-form';
 import { SurveyQuestion } from '../../types/survey';
-import { cn } from '../../utils/cn';
+
 
 interface QuestionProps {
   question: SurveyQuestion;

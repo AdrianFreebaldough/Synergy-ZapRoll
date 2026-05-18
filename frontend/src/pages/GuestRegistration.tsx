@@ -1,5 +1,5 @@
 import React from 'react';
-import { Mail } from 'lucide-react';
+
 import { useForm } from 'react-hook-form';
 import { useSearchParams } from 'react-router-dom';
 import { zodResolver } from '@hookform/resolvers/zod';

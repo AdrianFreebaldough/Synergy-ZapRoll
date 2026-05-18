@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Mail } from 'lucide-react';
 import { useForm, useWatch } from 'react-hook-form';
 import { useSearchParams } from 'react-router-dom';
@@ -8,7 +8,7 @@ import { useSubmission } from '../hooks/useSubmission';
 import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
 import LoadingButton from '../components/ui/LoadingButton';
-import { submitRegistration, fetchRegistrationDetails } from '../services/registrationService';
+import { submitRegistration } from '../services/registrationService';
 
 import SubmissionStatus from '../components/ui/SubmissionStatus';
 
@@ -53,7 +53,7 @@ const StudentRegistration: React.FC = () => {
   }
   const isDualRoleMode = isReturningPosterPresenter && !isEditingOriginal;
 
-  const { execute: submitData, isSubmitting, error, success, hasAlreadySubmitted, reset } = useSubmission(
+  const { execute: submitData, isSubmitting, error, success, hasAlreadySubmitted } = useSubmission(
     (data: StudentFormData & { isEdit?: boolean }) => submitRegistration('student', { ...data, quotaId } as any),
     { persistenceKey: 'student_registration' }
   );
