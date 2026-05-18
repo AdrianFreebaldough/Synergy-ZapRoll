@@ -118,17 +118,21 @@ export const registerEntry = async (req: Request, res: Response) => {
       )
       .maybeSingle();
 
+    const isEdit = req.body.isEdit === true;
+
     if (existingReg) {
       const isEmailConflict = email && existingReg.email === email;
       const isIdConflict = externalId && existingReg.external_id === externalId;
 
       if (isEmailConflict || isIdConflict) {
-        return res.status(400).json({
-          error: 'Already Registered',
-          message: isEmailConflict
-            ? `The email "${email}" is already registered for this event.`
-            : `The ID "${externalId}" is already registered for this event.`
-        });
+        if (!isEdit) {
+          return res.status(400).json({
+            error: 'Already Registered',
+            message: isEmailConflict
+              ? `The email "${email}" is already registered for this event.`
+              : `The ID "${externalId}" is already registered for this event.`
+          });
+        }
       }
     }
 
@@ -140,11 +144,12 @@ export const registerEntry = async (req: Request, res: Response) => {
       reg_type: req.body.isWalkIn ? 'walk-in' : 'pre-reg'
     };
 
-    // 4. Insert into the unified registrations table
+    // 4. Insert or Update (Upsert) into the unified registrations table (Allows editing registration details)
     const { data: result, error } = await supabase
       .from('registrations')
-      .insert([
+      .upsert([
         {
+          id: isEdit && existingReg ? existingReg.id : undefined, // CRITICAL: Only match and overwrite ID if explicitly editing!
           event_id: targetEventId,
           full_name: finalName,
           email: email || null,
@@ -153,7 +158,7 @@ export const registerEntry = async (req: Request, res: Response) => {
           metadata: metadata,
           status: 'registered',
           reg_type: req.body.isWalkIn ? 'walk-in' : 'pre-reg',
-          created_at: new Date().toISOString()
+          created_at: isEdit && existingReg ? undefined : new Date().toISOString() // Preserve original creation date on edits
         }
       ])
       .select();
@@ -259,6 +264,76 @@ export const registerEntry = async (req: Request, res: Response) => {
     console.error('Registration Error:', error);
     return res.status(500).json({
       error: error.message || 'An error occurred during registration'
+    });
+  }
+};
+
+export const lookupRegistration = async (req: Request, res: Response) => {
+  const { student_id } = req.query as { student_id?: string };
+
+  if (!student_id) {
+    return res.status(400).json({ error: 'Student ID is required' });
+  }
+
+  try {
+    // 0. Auto-Fetch the latest Event ID to scope search
+    const { data: latestEvent, error: eventError } = await supabase
+      .from('events')
+      .select('id')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (eventError || !latestEvent) {
+      return res.status(404).json({ error: 'No Active Event Found' });
+    }
+
+    const { data: registration, error } = await supabase
+      .from('registrations')
+      .select('*')
+      .eq('event_id', latestEvent.id)
+      .eq('external_id', student_id)
+      .maybeSingle();
+
+    if (error) {
+      console.error('Lookup DB Error:', error);
+      throw error;
+    }
+
+    if (!registration) {
+      return res.status(404).json({
+        error: 'Registration Not Found',
+        message: `No registration was found for Student ID "${student_id}" in this event.`
+      });
+    }
+
+    // Format the response structure so it maps exactly back into the React Hook Form structure!
+    const meta = registration.metadata as any;
+    
+    // Split name or extract from metadata if stored there
+    const nameParts = registration.full_name.split(' ');
+    const lastName = meta?.lastName || nameParts[nameParts.length - 1];
+    const firstName = meta?.firstName || nameParts[0];
+    const middleName = meta?.middleName || (nameParts.length > 2 ? nameParts.slice(1, nameParts.length - 1).join(' ') : '');
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        firstName,
+        lastName,
+        middleName,
+        email: registration.email || '',
+        studentId: registration.external_id || '',
+        yearLevel: meta?.yearLevel || '',
+        studentRole: meta?.studentRole || '',
+        section: meta?.section || ''
+      }
+    });
+
+  } catch (error: any) {
+    console.error('Lookup Registration Error:', error);
+    return res.status(500).json({
+      error: 'Failed to look up registration details'
     });
   }
 };
