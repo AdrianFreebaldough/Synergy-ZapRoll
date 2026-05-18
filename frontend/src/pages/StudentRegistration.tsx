@@ -12,6 +12,16 @@ import { submitRegistration } from '../services/registrationService';
 
 import SubmissionStatus from '../components/ui/SubmissionStatus';
 
+const section3rdYearOptions = Array.from({ length: 18 }, (_, i) => {
+  const letter = String.fromCharCode(65 + i);
+  return { value: `SBIT-3${letter}`, label: `SBIT-3${letter}` };
+});
+
+const section4thYearOptions = Array.from({ length: 18 }, (_, i) => {
+  const letter = String.fromCharCode(65 + i);
+  return { value: `SBIT-4${letter}`, label: `SBIT-4${letter}` };
+});
+
 const StudentRegistration: React.FC = () => {
   const [searchParams] = useSearchParams();
   const quotaId = searchParams.get('quota_id');
@@ -177,7 +187,12 @@ const StudentRegistration: React.FC = () => {
               <Input label="First Name" {...register('firstName')} placeholder="Juan" error={errors.firstName?.message} />
               <Input label="Middle Name" {...register('middleName')} placeholder="Optional" error={errors.middleName?.message} />
             </div>
-            <Input label="Section" {...register('section')} placeholder="SBIT-3G" error={errors.section?.message} />
+            <Select 
+              label="Section" 
+              options={section3rdYearOptions} 
+              {...register('section')} 
+              error={errors.section?.message} 
+            />
           </div>
         )}
 
@@ -221,7 +236,12 @@ const StudentRegistration: React.FC = () => {
                   <Input label="First Name" {...register('firstName')} placeholder="Juan" error={errors.firstName?.message} />
                   <Input label="Middle Name" {...register('middleName')} placeholder="Optional" error={errors.middleName?.message} />
                 </div>
-                <Input label="Section" {...register('section')} placeholder="SBIT-4G" error={errors.section?.message} />
+                <Select 
+                  label="Section" 
+                  options={section4thYearOptions} 
+                  {...register('section')} 
+                  error={errors.section?.message} 
+                />
               </div>
             )}
 
@@ -246,7 +266,12 @@ const StudentRegistration: React.FC = () => {
                   pattern="[0-9]*" 
                   error={errors.groupNumber?.message} 
                 />
-                <Input label="Section" {...register('section')} placeholder="SBIT-4G" error={errors.section?.message} />
+                <Select 
+                  label="Section" 
+                  options={section4thYearOptions} 
+                  {...register('section')} 
+                  error={errors.section?.message} 
+                />
                 <Input label="Capstone Title" {...register('capstoneTitle')} error={errors.capstoneTitle?.message} />
               </div>
             )}
@@ -272,7 +297,12 @@ const StudentRegistration: React.FC = () => {
                   pattern="[0-9]*" 
                   error={errors.groupNumber?.message} 
                 />
-                <Input label="Section" {...register('section')} placeholder="SBIT-4G" error={errors.section?.message} />
+                <Select 
+                  label="Section" 
+                  options={section4thYearOptions} 
+                  {...register('section')} 
+                  error={errors.section?.message} 
+                />
                 <Input label="Capstone Title" {...register('capstoneTitle')} error={errors.capstoneTitle?.message} />
               </div>
             )}
