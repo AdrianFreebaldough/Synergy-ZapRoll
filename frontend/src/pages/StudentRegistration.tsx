@@ -110,7 +110,12 @@ const StudentRegistration: React.FC = () => {
               <Mail className="w-5 h-5 shrink-0 mt-0.5" />
               <div className="text-[11px] md:text-xs">
                 <p className="font-bold uppercase tracking-wide mb-1">Check Your Inbox</p>
-                <p className="opacity-90 leading-relaxed">A confirmation email containing your registration details and event guidelines has been dispatched to your provided address.</p>
+                <p className="opacity-90 leading-relaxed">
+                  A confirmation email containing your registration details and event guidelines has been dispatched to your provided address.
+                  <span className="block mt-1.5 text-app-success/80 font-medium italic">
+                    *Please check your Spam or Junk folder if you do not see it in your inbox shortly.
+                  </span>
+                </p>
               </div>
             </div>
           </>
