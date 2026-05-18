@@ -356,6 +356,19 @@ const StudentRegistration: React.FC = () => {
         </div>
       )}
 
+      {Object.keys(errors).length > 0 && (
+        <div className="mb-6 p-4 bg-app-danger/10 border border-app-danger/20 text-app-danger rounded-xl text-xs space-y-2 animate-in fade-in slide-in-from-top-1">
+          <p className="font-bold uppercase tracking-wider text-[10px] text-app-danger">Form Validation Failures:</p>
+          <ul className="list-disc pl-4 space-y-1 text-[11px] text-app-text-secondary">
+            {Object.entries(errors).map(([field, err]: [string, any]) => (
+              <li key={field}>
+                <span className="font-semibold text-white capitalize">{field}</span>: {err?.message || 'Invalid value'}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {isDualRoleMode ? (
         <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="space-y-6 animate-in fade-in duration-500">
 
