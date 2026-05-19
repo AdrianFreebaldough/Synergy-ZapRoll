@@ -141,17 +141,22 @@ export const registerEntry = async (req: Request, res: Response) => {
     // 2. Extract external_id (e.g. Student ID)
     const externalId = otherData.studentId || null;
 
-    // 2.1 Duplicate Check (Email & ID)
-    // We check if this email OR student ID is already registered for THIS event
-    const { data: existingReg } = await supabase
+    // 2.1 Duplicate Check (Email & ID for Students, Full Name for Employees & Guests)
+    // We check if this employee/guest name OR student email/ID is already registered for THIS event
+    let lookupQuery = supabase
       .from('registrations')
       .select('id, full_name, email, external_id, metadata, quota_id, reg_type')
-      .eq('event_id', targetEventId)
-      .filter('id', 'not.is', null) // Dummy filter to start the query
-      .or(
+      .eq('event_id', targetEventId);
+
+    if (category === 'employee' || category === 'guest') {
+      lookupQuery = lookupQuery.ilike('full_name', finalName.trim());
+    } else {
+      lookupQuery = lookupQuery.filter('id', 'not.is', null).or(
         `email.eq."${email || '___NULL___'}",external_id.eq."${externalId || '___NULL___'}"`
-      )
-      .maybeSingle();
+      );
+    }
+
+    const { data: existingReg } = await lookupQuery.maybeSingle();
 
     let isEdit = req.body.isEdit === true;
     let isPreRegWalkIn = false;
@@ -159,8 +164,9 @@ export const registerEntry = async (req: Request, res: Response) => {
     if (existingReg) {
       const isEmailConflict = email && existingReg.email === email;
       const isIdConflict = externalId && existingReg.external_id === externalId;
+      const isNameConflict = category === 'employee' || category === 'guest';
 
-      if (isEmailConflict || isIdConflict) {
+      if (isEmailConflict || isIdConflict || isNameConflict) {
         const prevMeta = existingReg.metadata as any || {};
 
         // If they are registering via walk-in, and they were originally pre-registered:
