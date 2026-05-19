@@ -102,6 +102,39 @@ export const registerEntry = async (req: Request, res: Response) => {
       }
     }
 
+    // Pre-lookup open session for walk-ins to avoid server timezone issues
+    let activeSession: any = null;
+    if (req.body.isWalkIn) {
+      let query = supabase
+        .from('sessions')
+        .select('*')
+        .eq('event_id', targetEventId)
+        .eq('is_open', true);
+
+      if (category === 'employee') {
+        query = query.ilike('session_type', '%employee%');
+      } else {
+        query = query.not('session_type', 'ilike', '%employee%');
+      }
+
+      // Order by created_at desc and limit to 1 to handle multiple open sessions safely without maybeSingle crashes
+      const { data: sessions, error: sessionLookupError } = await query
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (sessionLookupError) throw new Error(`Session Lookup Failed: ${sessionLookupError.message}`);
+
+      const session = sessions && sessions.length > 0 ? sessions[0] : null;
+
+      if (!session) {
+        return res.status(400).json({
+          error: 'No Open Session',
+          message: `No active open session was found for walk-in check-in. Please ensure a session is open before registering.`
+        });
+      }
+      activeSession = session;
+    }
+
     // 1. Resolve primary fields (Check all possible name fields)
     const finalName = full_name || name || otherData.representativeName;
 
@@ -218,9 +251,10 @@ export const registerEntry = async (req: Request, res: Response) => {
     }
 
     // 3. Bundle metadata
+    const isPmSession = activeSession && (activeSession.session_type || '').toLowerCase().includes('pm');
     const walkinFlags = isPreRegWalkIn ? {
       attended_as_walkin: true,
-      walkin_session: new Date().getHours() >= 12 ? 'pm-reg' : 'am-reg',
+      walkin_session: isPmSession ? 'pm-reg' : 'am-reg',
       walkin_timestamp: new Date().toISOString()
     } : {};
 
@@ -284,27 +318,9 @@ export const registerEntry = async (req: Request, res: Response) => {
     console.log('---------------------------');
 
     // 5. Automatic Attendance for Walk-ins (Mandatory for walk-in registrations)
-    if (req.body.isWalkIn) {
+    if (req.body.isWalkIn && activeSession) {
       const now = new Date();
-      const isAfternoon = now.getHours() >= 12;
-      let searchPattern = isAfternoon ? '%pm%' : '%am%';
-      if (category === 'employee') searchPattern = '%employee%';
-
-      // Find the correct open session
-      const { data: session, error: sessionLookupError } = await supabase
-        .from('sessions')
-        .select('*')
-        .ilike('session_type', searchPattern)
-        .eq('is_open', true)
-        .maybeSingle();
-
-      if (sessionLookupError) throw new Error(`Session Lookup Failed: ${sessionLookupError.message}`);
-
-      if (!session) {
-        throw new Error(`No open ${isAfternoon ? 'PM' : 'AM'} session was found for walk-in check-in.`);
-      }
-
-      const typeLower = (session.session_type || '').toLowerCase();
+      const typeLower = (activeSession.session_type || '').toLowerCase();
       const sessionTypeField =
         typeLower.includes('employee') ? 'employee_scanned_at' :
           typeLower.includes('pm') ? 'pm_scanned_at' :
@@ -353,11 +369,11 @@ export const registerEntry = async (req: Request, res: Response) => {
       if (registration.email && (is3rdYear || isCollPart || isCollPres || isPoster)) {
         const datePart = `${new Date().getDate()}${(new Date().getMonth() + 1).toString().padStart(2, '0')}`;
         const identifier = (registration.external_id || registration.id.split('-')[0].toUpperCase().slice(0, 4)).replace(/\s+/g, '');
-        const sessionLabel = (session.session_type || 'EVT').split(' ')[0].toUpperCase();
+        const sessionLabel = (activeSession.session_type || 'EVT').split(' ')[0].toUpperCase();
         const verificationId = `${sessionLabel}-${identifier}-${datePart}`;
 
         try {
-          await sendAttendanceEmail(registration.email, registration.full_name, session.session_type, verificationId);
+          await sendAttendanceEmail(registration.email, registration.full_name, activeSession.session_type, verificationId);
         } catch (err) {
           console.error('Background Walk-in Attendance Email Error:', err);
         }
