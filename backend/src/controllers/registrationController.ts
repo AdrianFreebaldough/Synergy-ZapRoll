@@ -112,7 +112,7 @@ export const registerEntry = async (req: Request, res: Response) => {
     // We check if this email OR student ID is already registered for THIS event
     const { data: existingReg } = await supabase
       .from('registrations')
-      .select('id, full_name, email, external_id, metadata, quota_id')
+      .select('id, full_name, email, external_id, metadata, quota_id, reg_type')
       .eq('event_id', targetEventId)
       .filter('id', 'not.is', null) // Dummy filter to start the query
       .or(
@@ -121,6 +121,7 @@ export const registerEntry = async (req: Request, res: Response) => {
       .maybeSingle();
 
     let isEdit = req.body.isEdit === true;
+    let isPreRegWalkIn = false;
 
     if (existingReg) {
       const isEmailConflict = email && existingReg.email === email;
@@ -128,54 +129,62 @@ export const registerEntry = async (req: Request, res: Response) => {
 
       if (isEmailConflict || isIdConflict) {
         const prevMeta = existingReg.metadata as any || {};
-        
-        const newFirst = String(otherData.firstName || '').trim().toLowerCase();
-        const oldFirst = String(prevMeta.firstName || '').trim().toLowerCase();
-        
-        const newLast = String(otherData.lastName || '').trim().toLowerCase();
-        const oldLast = String(prevMeta.lastName || '').trim().toLowerCase();
 
-        const newMiddle = String(otherData.middleName || '').trim().toLowerCase();
-        const oldMiddle = String(prevMeta.middleName || '').trim().toLowerCase();
-
-        const newYear = String(otherData.yearLevel || '').trim().toLowerCase();
-        const oldYear = String(prevMeta.yearLevel || '').trim().toLowerCase();
-
-        const newSection = String(otherData.section || '').trim().toLowerCase();
-        const oldSection = String(prevMeta.section || '').trim().toLowerCase();
-
-        const newEmail = String(email || '').trim().toLowerCase();
-        const oldEmail = String(existingReg.email || '').trim().toLowerCase();
-
-        const newId = String(externalId || '').trim().toLowerCase();
-        const oldId = String(existingReg.external_id || '').trim().toLowerCase();
-
-        // Check name parity (handling split names and legacy single string names)
-        const newNameStr = String(finalName || '').trim().toLowerCase().replace(/\s+/g, ' ');
-        const oldNameStr = String(existingReg.full_name || '').trim().toLowerCase().replace(/\s+/g, ' ');
-        const isNameMatch = oldFirst && oldLast ? (newFirst === oldFirst && newLast === oldLast) : newNameStr === oldNameStr;
-
-        const isExactMatch = 
-          isNameMatch &&
-          newMiddle === oldMiddle &&
-          newYear === oldYear &&
-          newSection === oldSection &&
-          newEmail === oldEmail &&
-          newId === oldId;
-
-        if (!isEdit && !isExactMatch) {
-          return res.status(400).json({
-            error: 'Already Registered',
-            message: isEmailConflict
-              ? `The email "${email}" is already registered for this event.`
-              : `The ID "${externalId}" is already registered for this event.`
-          });
-        }
-
-        // If they match exactly, we accept their new entry and just update their existing row in database!
-        if (isExactMatch) {
+        // If they are registering via walk-in, and they were originally pre-registered:
+        if (req.body.isWalkIn && (existingReg.reg_type === 'pre-reg' || prevMeta.reg_type === 'pre-reg')) {
           isEdit = true;
           req.body.isEdit = true;
+          isPreRegWalkIn = true;
+        } else {
+          // Otherwise do normal validation checks
+          const newFirst = String(otherData.firstName || '').trim().toLowerCase();
+          const oldFirst = String(prevMeta.firstName || '').trim().toLowerCase();
+          
+          const newLast = String(otherData.lastName || '').trim().toLowerCase();
+          const oldLast = String(prevMeta.lastName || '').trim().toLowerCase();
+
+          const newMiddle = String(otherData.middleName || '').trim().toLowerCase();
+          const oldMiddle = String(prevMeta.middleName || '').trim().toLowerCase();
+
+          const newYear = String(otherData.yearLevel || '').trim().toLowerCase();
+          const oldYear = String(prevMeta.yearLevel || '').trim().toLowerCase();
+
+          const newSection = String(otherData.section || '').trim().toLowerCase();
+          const oldSection = String(prevMeta.section || '').trim().toLowerCase();
+
+          const newEmail = String(email || '').trim().toLowerCase();
+          const oldEmail = String(existingReg.email || '').trim().toLowerCase();
+
+          const newId = String(externalId || '').trim().toLowerCase();
+          const oldId = String(existingReg.external_id || '').trim().toLowerCase();
+
+          // Check name parity (handling split names and legacy single string names)
+          const newNameStr = String(finalName || '').trim().toLowerCase().replace(/\s+/g, ' ');
+          const oldNameStr = String(existingReg.full_name || '').trim().toLowerCase().replace(/\s+/g, ' ');
+          const isNameMatch = oldFirst && oldLast ? (newFirst === oldFirst && newLast === oldLast) : newNameStr === oldNameStr;
+
+          const isExactMatch = 
+            isNameMatch &&
+            newMiddle === oldMiddle &&
+            newYear === oldYear &&
+            newSection === oldSection &&
+            newEmail === oldEmail &&
+            newId === oldId;
+
+          if (!isEdit && !isExactMatch) {
+            return res.status(400).json({
+              error: 'Already Registered',
+              message: isEmailConflict
+                ? `The email "${email}" is already registered for this event.`
+                : `The ID "${externalId}" is already registered for this event.`
+            });
+          }
+
+          // If they match exactly, we accept their new entry and just update their existing row in database!
+          if (isExactMatch) {
+            isEdit = true;
+            req.body.isEdit = true;
+          }
         }
       }
     }
@@ -209,12 +218,19 @@ export const registerEntry = async (req: Request, res: Response) => {
     }
 
     // 3. Bundle metadata
+    const walkinFlags = isPreRegWalkIn ? {
+      attended_as_walkin: true,
+      walkin_session: new Date().getHours() >= 12 ? 'pm-reg' : 'am-reg',
+      walkin_timestamp: new Date().toISOString()
+    } : {};
+
     const metadata = {
       ...otherData,
       studentRole: finalRoles, // Structurally consistent JSON array
       registered_category: category,
       registration_source: req.body.isWalkIn ? 'on_site' : 'web_portal',
-      reg_type: req.body.isWalkIn ? 'walk-in' : 'pre-reg'
+      reg_type: existingReg ? (existingReg.reg_type || (existingReg.metadata as any)?.reg_type) : (req.body.isWalkIn ? 'walk-in' : 'pre-reg'),
+      ...walkinFlags
     };
 
     // 4. Insert or Update (Upsert) into the unified registrations table (Allows editing registration details)
@@ -226,7 +242,7 @@ export const registerEntry = async (req: Request, res: Response) => {
       quota_id: shouldIgnoreQuota ? null : (quotaId || null),
       metadata: metadata,
       status: 'registered',
-      reg_type: req.body.isWalkIn ? 'walk-in' : 'pre-reg',
+      reg_type: existingReg ? existingReg.reg_type : (req.body.isWalkIn ? 'walk-in' : 'pre-reg'),
       created_at: isEdit && existingReg ? undefined : new Date().toISOString() // Preserve original creation date on edits
     };
 
@@ -294,17 +310,37 @@ export const registerEntry = async (req: Request, res: Response) => {
           typeLower.includes('pm') ? 'pm_scanned_at' :
             'am_scanned_at';
 
-      const { error: attendError } = await supabase
+      // Find if an attendance record already exists for this participant to avoid Unique Violation crashes
+      const { data: existingAttendance } = await supabase
         .from('attendance')
-        .insert([{
-          participant_id: registration.id,
-          registration_id: registration.id,
-          event_id: targetEventId,
-          [sessionTypeField]: now.toISOString()
-        }]);
+        .select('id')
+        .eq('participant_id', registration.id)
+        .maybeSingle();
 
-      if (attendError) {
-        throw new Error(`Attendance Recording Failed: ${attendError.message}`);
+      if (existingAttendance) {
+        const { error: attendError } = await supabase
+          .from('attendance')
+          .update({
+            [sessionTypeField]: now.toISOString()
+          })
+          .eq('id', existingAttendance.id);
+
+        if (attendError) {
+          throw new Error(`Attendance Recording Update Failed: ${attendError.message}`);
+        }
+      } else {
+        const { error: attendError } = await supabase
+          .from('attendance')
+          .insert([{
+            participant_id: registration.id,
+            registration_id: registration.id,
+            event_id: targetEventId,
+            [sessionTypeField]: now.toISOString()
+          }]);
+
+        if (attendError) {
+          throw new Error(`Attendance Recording Failed: ${attendError.message}`);
+        }
       }
 
       // 5.1 Trigger Attendance Email for Walk-ins (Async)
