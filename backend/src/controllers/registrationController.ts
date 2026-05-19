@@ -228,33 +228,12 @@ export const registerEntry = async (req: Request, res: Response) => {
       }
     }
 
-    // Extract previous roles for merging if in edit mode
-    let previousRoles: string[] = [];
-    if (isEdit && existingReg) {
-      const prevMeta = existingReg.metadata as any;
-      if (prevMeta && prevMeta.studentRole) {
-        previousRoles = Array.isArray(prevMeta.studentRole)
-          ? prevMeta.studentRole
-          : [prevMeta.studentRole];
-      }
-    }
-
     const currentRole = (is3rdYear && !req.body.isWalkIn)
       ? 'Poster Attendee' 
       : (otherData.studentRole || otherData.registered_category);
-    let finalRoles: string[] = [];
 
-    if (is3rdYear && !req.body.isWalkIn) {
-      // For 3rd-year pre-registrations, discard any 4th-year participant/presenter roles
-      finalRoles = ['Poster Attendee'];
-    } else if (previousRoles.length > 0) {
-      finalRoles = [...previousRoles];
-      if (currentRole && !finalRoles.includes(currentRole)) {
-        finalRoles.push(currentRole);
-      }
-    } else {
-      finalRoles = currentRole ? [currentRole] : [];
-    }
+    // Overwrite the studentRole with the new choice instead of merging or doubling previous values
+    const finalRoles: string[] = currentRole ? [currentRole] : [];
 
     // 3. Bundle metadata
     const isPmSession = activeSession && (activeSession.session_type || '').toLowerCase().includes('pm');
