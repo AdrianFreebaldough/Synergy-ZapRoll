@@ -268,12 +268,23 @@ export const registerEntry = async (req: Request, res: Response) => {
     };
 
     // 4. Insert or Update (Upsert) into the unified registrations table (Allows editing registration details)
+    let finalQuotaId = shouldIgnoreQuota ? null : (quotaId || null);
+
+    // Preserve original quota_id on edit if they have a Colloquium role (Participant or Presenter)
+    if (isEdit && existingReg && existingReg.quota_id) {
+      const hasColloquiumRole = finalRoles.includes('Colloquium Participant') || 
+                                finalRoles.includes('Colloquium Presenter');
+      if (hasColloquiumRole) {
+        finalQuotaId = existingReg.quota_id;
+      }
+    }
+
     const upsertRow: any = {
       event_id: targetEventId,
       full_name: finalName,
       email: email || null,
       external_id: externalId,
-      quota_id: shouldIgnoreQuota ? null : (quotaId || null),
+      quota_id: finalQuotaId,
       metadata: metadata,
       status: 'registered',
       reg_type: existingReg ? existingReg.reg_type : (req.body.isWalkIn ? 'walk-in' : 'pre-reg'),
