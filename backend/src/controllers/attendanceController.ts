@@ -73,10 +73,9 @@ export const submitAttendance = async (req: Request, res: Response) => {
     // 3. Record Attendance (Robust Upsert Logic)
     const typeLower = (session.session_type || '').toLowerCase();
     const metadata = registration.metadata as any;
-    const isPoster = metadata?.studentRole === 'Poster Presenter';
 
-    // PRIORITIZE poster field for posters, then employee, then PM/AM
-    const sessionTypeField = isPoster ? 'poster_scanned_at' :
+    // Resolve column dynamically based on the active session type
+    const sessionTypeField = typeLower.includes('poster') ? 'poster_scanned_at' :
                              typeLower.includes('employee') ? 'employee_scanned_at' : 
                              typeLower.includes('pm') ? 'pm_scanned_at' : 
                              'am_scanned_at';
@@ -97,17 +96,32 @@ export const submitAttendance = async (req: Request, res: Response) => {
       });
     }
 
+    // Build upsert payload
+    const roles = Array.isArray(metadata?.studentRole) ? metadata.studentRole : (metadata?.studentRole ? [metadata.studentRole] : []);
+    const isPosterPresenter = roles.includes('Poster Presenter');
+
+    const upsertPayload: any = {
+      id: existing?.id, // Use existing ID if we found one
+      participant_id: registration.id,
+      registration_id: registration.id,
+      session_id: session.id, // Record the specific session ID
+      event_id: session.event_id || registration.event_id || existing?.event_id || null,
+      [sessionTypeField]: now
+    };
+
+    // If they are a Poster Presenter scanning for either the Poster session or the AM session, populate both columns
+    if (isPosterPresenter) {
+      if (sessionTypeField === 'poster_scanned_at') {
+        upsertPayload.am_scanned_at = now;
+      } else if (sessionTypeField === 'am_scanned_at') {
+        upsertPayload.poster_scanned_at = now;
+      }
+    }
+
     // Upsert the record (Match by participant_id)
     const { error: upsertError } = await supabase
       .from('attendance')
-      .upsert({
-        id: existing?.id, // Use existing ID if we found one
-        participant_id: registration.id,
-        registration_id: registration.id,
-        session_id: session.id, // Record the specific session ID
-        event_id: session.event_id || registration.event_id || existing?.event_id || null,
-        [sessionTypeField]: now
-      });
+      .upsert(upsertPayload);
 
     if (upsertError) {
       console.error('Upsert Error:', upsertError);
@@ -118,9 +132,9 @@ export const submitAttendance = async (req: Request, res: Response) => {
     // Filter: Only 3rd Years, 4th Year Colloquium Participants, 4th Year Colloquium Presenters, and Poster Presenters
     const meta = registration.metadata as any;
     const is3rdYear = meta?.yearLevel === '3rd Year';
-    const isCollPart = meta?.studentRole === 'Colloquium Participant';
-    const isCollPres = meta?.studentRole === 'Colloquium Presenter';
-    const isPosterPres = meta?.studentRole === 'Poster Presenter';
+    const isCollPart = roles.includes('Colloquium Participant');
+    const isCollPres = roles.includes('Colloquium Presenter');
+    const isPosterPres = roles.includes('Poster Presenter');
 
     if (registration.email && (is3rdYear || isCollPart || isCollPres || isPosterPres)) {
       // Generate a Unique Verification Code (Format: SESSION-STUDENTID-DATE)
@@ -178,7 +192,8 @@ export const posterLogout = async (req: Request, res: Response) => {
 
     // Verify if they are a poster participant (Strict restriction)
     const metadata = registration.metadata as any;
-    if (metadata?.studentRole !== 'Poster Presenter') {
+    const roles = Array.isArray(metadata?.studentRole) ? metadata.studentRole : (metadata?.studentRole ? [metadata.studentRole] : []);
+    if (!roles.includes('Poster Presenter')) {
       return res.status(403).json({
         error: 'Not a Poster Participant',
         message: 'This logout form is exclusively for students registered with the "Poster Presenter" role. Your registered role is different.'
