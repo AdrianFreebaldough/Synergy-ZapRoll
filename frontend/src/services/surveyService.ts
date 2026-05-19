@@ -18,11 +18,12 @@ export const fetchEvaluationTemplate = async (session?: string) => {
  * Verifies student attendance for a specific event session.
  * Endpoint: POST /api/events/evaluation/verify
  */
-export const verifyStudentAttendance = async (eventId: string, studentId: string, forcedSession?: string) => {
+export const verifyStudentAttendance = async (eventId: string, studentId: string, forcedSession?: string, role?: string) => {
   const response = await axios.post(`${API_URL}/events/evaluation/verify`, {
     eventId, // Sent in body now
     student_id: studentId,
-    forced_session: forcedSession
+    forced_session: forcedSession,
+    role
   });
   return response.data;
 };
@@ -36,7 +37,8 @@ export const submitEvaluationResponse = async (
   templateId: string,
   registrationId: string,
   responses: Record<string, any>,
-  session: string
+  session: string,
+  role?: string
 ) => {
   const response = await axios.post(`${API_URL}/events/evaluation/submit`, {
     eventId, // Sent in body now
@@ -44,6 +46,7 @@ export const submitEvaluationResponse = async (
     registration_id: registrationId,
     responses,
     session,
+    role,
   });
   return response.data;
 };

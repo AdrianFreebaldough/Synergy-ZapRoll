@@ -28,6 +28,7 @@ const EvaluationPage: React.FC = () => {
   const [fetchError, setFetchError] = useState<string | null>(null);
 
   // ── Attendance Verification State ──
+  const [role, setRole] = useState<'student' | 'employee' | 'guest' | ''>('');
   const [isVerified, setIsVerified] = useState(false);
   const [registrationId, setRegistrationId] = useState<string | null>(null);
   const [studentName, setStudentName] = useState<string | null>(null);
@@ -87,7 +88,7 @@ const EvaluationPage: React.FC = () => {
 
   // ── Verify Attendance Handler ──
   const handleVerifyAttendance = async () => {
-    if (!studentIdInput || studentIdInput.length < 7) return;
+    if (role === 'student' && (!studentIdInput || studentIdInput.length < 7)) return;
 
     setIsVerifying(true);
     setVerifyError(null);
@@ -95,7 +96,7 @@ const EvaluationPage: React.FC = () => {
     try {
       // Use event_id from the fetched template
       const targetEventId = template?.event_id || eventId || '';
-      const result = await verifyStudentAttendance(targetEventId, studentIdInput, sessionLabel);
+      const result = await verifyStudentAttendance(targetEventId, studentIdInput, sessionLabel, role);
       setIsVerified(true);
       setRegistrationId(result.registration_id);
       setStudentName(result.full_name);
@@ -169,9 +170,11 @@ const EvaluationPage: React.FC = () => {
     try {
       const formData = methods.getValues();
       const targetEventId = template?.event_id || eventId || '';
-      await submitEvaluationResponse(targetEventId, template.id, registrationId, formData, sessionLabel);
+      await submitEvaluationResponse(targetEventId, template.id, registrationId, formData, sessionLabel, role);
       setIsSuccess(true);
-      localStorage.setItem(`submitted_${persistenceKey}`, 'true');
+      if (role === 'student') {
+        localStorage.setItem(`submitted_${persistenceKey}`, 'true');
+      }
     } catch (err: any) {
       const errData = err.response?.data;
       const msg = errData?.error || errData?.message || 'Submission failed';
@@ -278,7 +281,7 @@ const EvaluationPage: React.FC = () => {
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // STUDENT ID VERIFICATION GATE
+  // MULTI-ROLE VERIFICATION GATE
   // ─────────────────────────────────────────────────────────────────────────
 
   if (!isVerified) {
@@ -294,14 +297,14 @@ const EvaluationPage: React.FC = () => {
               </span>
             </h1>
             <p className="mt-2 text-app-text-secondary text-sm leading-relaxed opacity-80">
-              Please verify your identity to proceed with the evaluation form.
+              Please select your role to proceed with the evaluation form.
             </p>
           </div>
 
           {/* Verification Form */}
-          <div className="p-6 md:p-8">
-            <div className="space-y-4">
-              {/* Icon */}
+          <div className="p-6 md:p-8 bg-white/[0.01]">
+            <div className="space-y-5">
+              {/* Icon & Title Header (Adaptive) */}
               <div className="flex items-center gap-3 mb-2">
                 <div className="w-10 h-10 bg-app-primary/10 text-app-primary rounded-xl flex items-center justify-center border border-app-primary/20">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -309,34 +312,58 @@ const EvaluationPage: React.FC = () => {
                   </svg>
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-white/90">Student ID Verification</h3>
-                  <p className="text-[10px] text-app-text-muted uppercase tracking-wider">
-                    Attendance will be checked automatically
+                  <h3 className="text-sm font-semibold text-white/90">
+                    {!role ? 'Role Identification' : role === 'student' ? 'Student ID Verification' : role === 'employee' ? 'Employee Pass' : 'Guest Pass'}
+                  </h3>
+                  <p className="text-[10px] text-app-text-muted uppercase tracking-wider font-semibold">
+                    {!role ? 'Please select your role to proceed' : role === 'student' ? 'Attendance will be checked automatically' : 'Instant anonymous access authorized'}
                   </p>
                 </div>
               </div>
 
-              {/* Input */}
+              {/* Role Dropdown */}
               <div className="space-y-1.5">
                 <label className="block text-sm font-semibold text-white/90">
-                  Student ID <span className="text-app-danger">*</span>
+                  Choose Your Role <span className="text-app-danger">*</span>
                 </label>
-                <input
-                  type="text"
-                  value={studentIdInput}
-                  onChange={handleStudentIdChange}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      handleVerifyAttendance();
-                    }
+                <select
+                  value={role}
+                  onChange={(e) => {
+                    setRole(e.target.value as any);
+                    setVerifyError(null);
                   }}
-                  className="w-full glass-input px-3.5 py-3 text-sm text-center tracking-[0.3em] font-mono"
-                  placeholder="00-0000"
-                  maxLength={7}
-                  autoFocus
-                />
+                  className="w-full glass-input px-3.5 py-3 text-sm text-white bg-app-dark rounded-xl border border-white/[0.08] focus:border-app-primary/50 focus:outline-none transition-all duration-300"
+                >
+                  <option value="" disabled className="bg-slate-900 text-white/40">-- Select Your Role --</option>
+                  <option value="student" className="bg-slate-900 text-white">Student</option>
+                  <option value="employee" className="bg-slate-900 text-white">Employee</option>
+                  <option value="guest" className="bg-slate-900 text-white">Guest</option>
+                </select>
               </div>
+
+              {/* Conditional Student ID Input */}
+              {role === 'student' && (
+                <div className="space-y-1.5 animate-in fade-in slide-in-from-top-2 duration-300">
+                  <label className="block text-sm font-semibold text-white/90">
+                    Student ID <span className="text-app-danger">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={studentIdInput}
+                    onChange={handleStudentIdChange}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleVerifyAttendance();
+                      }
+                    }}
+                    className="w-full glass-input px-3.5 py-3 text-sm text-center tracking-[0.3em] font-mono text-white rounded-xl border border-white/[0.08]"
+                    placeholder="00-0000"
+                    maxLength={7}
+                    autoFocus
+                  />
+                </div>
+              )}
 
               {/* Error Message */}
               {verifyError && (
@@ -362,11 +389,11 @@ const EvaluationPage: React.FC = () => {
               type="button"
               onClick={handleVerifyAttendance}
               isLoading={isVerifying}
-              loadingText="Verifying..."
+              loadingText="Accessing Form..."
               size="lg"
-              disabled={studentIdInput.length < 7}
+              disabled={!role || (role === 'student' && studentIdInput.length < 7)}
             >
-              Verify & Continue
+              {role === 'student' ? 'Verify & Continue' : 'Proceed to Evaluation'}
             </LoadingButton>
           </div>
         </div>
@@ -398,7 +425,10 @@ const EvaluationPage: React.FC = () => {
               </svg>
             </div>
             <span className="text-[10px] text-app-text-muted uppercase tracking-widest font-bold">
-              Verified: {studentName} ({studentIdInput}) — {verifiedSession} Session
+              {role === 'student'
+                ? `Verified Student: ${studentName} (${studentIdInput}) — ${verifiedSession} Session`
+                : `Authorized Access: ${role.toUpperCase()} PASS — ${verifiedSession} Session`
+              }
             </span>
           </div>
 

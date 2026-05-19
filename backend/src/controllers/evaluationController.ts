@@ -48,42 +48,100 @@ export const getEvaluationTemplate = async (req: Request, res: Response) => {
     }
 
     return res.json(template);
-
   } catch (error: any) {
     console.error('Evaluation Template Error:', error);
     return res.status(500).json({ error: 'Internal Server Error' });
   }
 };
 
+const getOrCreateAnonymousRegistration = async (eventId: string, category: 'employee' | 'guest') => {
+  const dummyEmail = `anonymous-${category}@synergy.event`;
+  const dummyName = `Anonymous ${category === 'employee' ? 'Employee' : 'Guest'}`;
+
+  // 1. Try to find the existing placeholder
+  const { data: existing, error } = await supabase
+    .from('registrations')
+    .select('id')
+    .eq('event_id', eventId)
+    .eq('email', dummyEmail)
+    .maybeSingle();
+
+  if (existing) {
+    return existing.id;
+  }
+
+  // 2. If not found, create it dynamically!
+  const { data: created, error: insertError } = await supabase
+    .from('registrations')
+    .insert([{
+      event_id: eventId,
+      full_name: dummyName,
+      email: dummyEmail,
+      reg_type: 'walk-in',
+      status: 'registered',
+      metadata: { registered_category: category }
+    }])
+    .select('id')
+    .single();
+
+  if (insertError) {
+    console.error(`Failed to create dummy registration for ${category}:`, insertError);
+    throw insertError;
+  }
+
+  return created.id;
+};
+
 /**
  * POST /api/events/:eventId/verify-attendance
  * 
- * Verifies that a student was present at the event session.
- * Body: { student_id }
- * 
- * Logic:
- * 1. Find the registration by external_id (student ID)
- * 2. Find their attendance record for this event
- * 3. Auto-detect AM/PM based on current time
- * 4. Check the corresponding session column
+ * Verifies that a student was present at the event session, or dynamically returns
+ * the anonymous pass ID for guests and employees.
+ * Body: { student_id, role, forced_session }
  */
 export const verifyAttendance = async (req: Request, res: Response) => {
   const eventId = req.params.eventId || req.body.eventId;
-  const { student_id, forced_session } = req.body;
+  const { student_id, role, forced_session } = req.body;
 
   if (!eventId) {
     return res.status(400).json({ error: 'Missing Event ID' });
   }
 
-  if (!student_id) {
-    return res.status(400).json({
-      error: 'Student ID Required',
-      message: 'Please enter your Student ID to continue.'
-    });
+  // 1. Session Detection (Token overrides Time)
+  let sessionLabel: string;
+  let sessionField: string;
+
+  if (forced_session === 'am' || forced_session === 'pm') {
+    sessionLabel = forced_session.toUpperCase();
+    sessionField = forced_session === 'am' ? 'am_scanned_at' : 'pm_scanned_at';
+  } else {
+    const currentHour = new Date().getHours();
+    const isAfternoon = currentHour >= 12;
+    sessionLabel = isAfternoon ? 'PM' : 'AM';
+    sessionField = isAfternoon ? 'pm_scanned_at' : 'am_scanned_at';
   }
 
   try {
-    // 1. Find registration by external_id (student ID) for this event
+    // 2. Handle Anonymous Employee / Guest Roles
+    if (role === 'employee' || role === 'guest') {
+      const anonymousId = await getOrCreateAnonymousRegistration(eventId, role);
+      return res.status(200).json({
+        verified: true,
+        registration_id: anonymousId,
+        full_name: role === 'employee' ? 'Employee Pass' : 'Guest Pass',
+        session: sessionLabel
+      });
+    }
+
+    // 3. Handle Student Role (Standard Attendance Verification)
+    if (!student_id) {
+      return res.status(400).json({
+        error: 'Student ID Required',
+        message: 'Please enter your Student ID to continue.'
+      });
+    }
+
+    // Find registration by external_id (student ID) for this event
     const { data: registration, error: regError } = await supabase
       .from('registrations')
       .select('id, full_name, external_id, event_id')
@@ -103,7 +161,7 @@ export const verifyAttendance = async (req: Request, res: Response) => {
       });
     }
 
-    // 2. Find attendance record
+    // Find attendance record
     const { data: attendance, error: attError } = await supabase
       .from('attendance')
       .select('*')
@@ -122,21 +180,7 @@ export const verifyAttendance = async (req: Request, res: Response) => {
       });
     }
 
-    // 3. Detect session (Token overrides Time)
-    let sessionLabel: string;
-    let sessionField: string;
-
-    if (forced_session === 'am' || forced_session === 'pm') {
-      sessionLabel = forced_session.toUpperCase();
-      sessionField = forced_session === 'am' ? 'am_scanned_at' : 'pm_scanned_at';
-    } else {
-      const currentHour = new Date().getHours();
-      const isAfternoon = currentHour >= 12;
-      sessionLabel = isAfternoon ? 'PM' : 'AM';
-      sessionField = isAfternoon ? 'pm_scanned_at' : 'am_scanned_at';
-    }
-
-    // 4. Check if the student was scanned for the relevant session
+    // Check if the student was scanned for the relevant session
     const wasPresent = !!(attendance as any)[sessionField];
 
     if (!wasPresent) {
@@ -146,7 +190,7 @@ export const verifyAttendance = async (req: Request, res: Response) => {
       });
     }
 
-    // 5. NEW: Check if they already submitted for this session
+    // Check if they already submitted for this session
     const { data: existingResponse, error: responseError } = await supabase
       .from('evaluation_responses')
       .select('am_eval_submitted_at, pm_eval_submitted_at')
@@ -166,7 +210,7 @@ export const verifyAttendance = async (req: Request, res: Response) => {
       });
     }
 
-    // 6. Verified! Return registration info
+    // Verified! Return registration info
     return res.status(200).json({
       verified: true,
       registration_id: registration.id,
@@ -191,7 +235,7 @@ export const verifyAttendance = async (req: Request, res: Response) => {
  */
 export const submitEvaluationResponse = async (req: Request, res: Response) => {
   const eventId = req.params.eventId || req.body.eventId;
-  const { template_id, registration_id, responses, session } = req.body;
+  const { template_id, registration_id, responses, session, role } = req.body;
 
   if (!eventId) {
     return res.status(400).json({ error: 'Missing Event ID' });
@@ -214,7 +258,31 @@ export const submitEvaluationResponse = async (req: Request, res: Response) => {
     const submittedAtField = sessionLabel === 'pm' ? 'pm_eval_submitted_at' : 'am_eval_submitted_at';
     const responsesField = sessionLabel === 'pm' ? 'pm_eval_responses' : 'am_eval_responses';
 
-    // 1. Check for existing response by registration_id to ensure we update the same row
+    const isAnonymous = role === 'employee' || role === 'guest';
+
+    if (isAnonymous) {
+      // For anonymous guests and employees, we always perform a clean INSERT so multiple people can submit.
+      const { data: result, error } = await supabase
+        .from('evaluation_responses')
+        .insert({
+          template_id,
+          registration_id,
+          [submittedAtField]: new Date().toISOString(),
+          [responsesField]: responses
+        })
+        .select();
+
+      if (error) {
+        throw error;
+      }
+
+      return res.status(201).json({
+        message: 'Evaluation submitted successfully',
+        data: result ? result[0] : null
+      });
+    }
+
+    // 1. Check for existing response by registration_id to ensure we update the same row (Students only)
     const { data: existing, error: checkError } = await supabase
       .from('evaluation_responses')
       .select('*')
