@@ -12,10 +12,14 @@ import { submitRegistration } from '../services/registrationService';
 
 import SubmissionStatus from '../components/ui/SubmissionStatus';
 
-const section3rdYearOptions = Array.from({ length: 18 }, (_, i) => {
-  const letter = String.fromCharCode(65 + i);
-  return { value: `SBIT-3${letter}`, label: `SBIT-3${letter}` };
-});
+const section3rdYearOptions = [
+  { value: 'SBIS-3A', label: 'SBIS-3A' },
+  { value: 'SBCS-3A', label: 'SBCS-3A' },
+  ...Array.from({ length: 18 }, (_, i) => {
+    const letter = String.fromCharCode(65 + i);
+    return { value: `SBIT-3${letter}`, label: `SBIT-3${letter}` };
+  })
+];
 
 const section4thYearOptions = Array.from({ length: 18 }, (_, i) => {
   const letter = String.fromCharCode(65 + i);
