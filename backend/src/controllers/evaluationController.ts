@@ -258,31 +258,7 @@ export const submitEvaluationResponse = async (req: Request, res: Response) => {
     const submittedAtField = sessionLabel === 'pm' ? 'pm_eval_submitted_at' : 'am_eval_submitted_at';
     const responsesField = sessionLabel === 'pm' ? 'pm_eval_responses' : 'am_eval_responses';
 
-    const isAnonymous = role === 'employee' || role === 'guest';
-
-    if (isAnonymous) {
-      // For anonymous guests and employees, we always perform a clean INSERT so multiple people can submit.
-      const { data: result, error } = await supabase
-        .from('evaluation_responses')
-        .insert({
-          template_id,
-          registration_id,
-          [submittedAtField]: new Date().toISOString(),
-          [responsesField]: responses
-        })
-        .select();
-
-      if (error) {
-        throw error;
-      }
-
-      return res.status(201).json({
-        message: 'Evaluation submitted successfully',
-        data: result ? result[0] : null
-      });
-    }
-
-    // 1. Check for existing response by registration_id to ensure we update the same row (Students only)
+    // 1. Check for existing response by registration_id to ensure we update the same row
     const { data: existing, error: checkError } = await supabase
       .from('evaluation_responses')
       .select('*')
@@ -293,8 +269,10 @@ export const submitEvaluationResponse = async (req: Request, res: Response) => {
       console.error('Submission Check Error:', checkError);
     }
 
-    // 2. Check if already submitted for this specific session
-    if (existing && (existing as any)[submittedAtField]) {
+    const isAnonymous = role === 'employee' || role === 'guest';
+
+    // 2. Check if already submitted for this specific session (Students only to prevent duplicates)
+    if (!isAnonymous && existing && (existing as any)[submittedAtField]) {
       return res.status(400).json({
         error: 'Already Submitted',
         message: `You have already submitted an evaluation for the ${sessionLabel.toUpperCase()} session.`
