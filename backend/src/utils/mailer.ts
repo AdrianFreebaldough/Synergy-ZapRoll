@@ -19,6 +19,14 @@ const accountsConfig = [
   {
     email: process.env.SMTP_USER_BACKUP_1 || 'qcusynergy2026.2@gmail.com',
     pass: process.env.SMTP_PASS_BACKUP_1 || 'fkaq ugkm svse rtxf'
+  },
+  {
+    email: process.env.SMTP_USER_BACKUP_2 || 'qcusynergy2026.3@gmail.com',
+    pass: process.env.SMTP_PASS_BACKUP_2 || 'odle ggdj qron wbiv'
+  },
+  {
+    email: process.env.SMTP_USER_BACKUP_3 || 'qcusynergy2026.4@gmail.com',
+    pass: process.env.SMTP_PASS_BACKUP_3 || 'gecl mmfl fwdo rnub'
   }
   // To add more backup accounts in the future, simply append them below!
 ];
