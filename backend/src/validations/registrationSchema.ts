@@ -28,7 +28,7 @@ export const studentSchema = baseSchema.extend({
   studentId: z.string().regex(studentIdRegex, 'Format must be 00-0000').optional(),
   name: z.string().min(2, 'Name is required').optional(),
   section: z.string().min(1, 'Section is required').optional(),
-  studentRole: z.enum(['Colloquium Participant', 'Colloquium Presenter', 'Poster Presenter']).optional(),
+  studentRole: z.enum(['Colloquium Participant', 'Colloquium Presenter', 'Poster Presenter', 'Poster Attendee']).optional(),
   representativeName: z.string().min(2, 'Name is required').optional(),
   groupNumber: z.string().min(1, 'Group number is required').optional(),
   capstoneTitle: z.string().min(2, 'Capstone title is required').optional(),

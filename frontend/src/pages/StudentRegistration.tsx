@@ -293,14 +293,31 @@ const StudentRegistration: React.FC = () => {
             ) : (
               <div className="bg-app-success/10 border border-app-success/20 p-4 rounded-xl text-app-success flex items-start gap-3 mt-2 text-left animate-in slide-in-from-bottom-2 duration-700 delay-100 fill-mode-both">
                 <Mail className="w-5 h-5 shrink-0 mt-0.5" />
-                <div className="text-[11px] md:text-xs">
-                  <p className="font-bold uppercase tracking-wide mb-1">Check Your Inbox</p>
-                  <p className="opacity-90 leading-relaxed">
-                    A confirmation email containing your registration details and event guidelines has been dispatched to your provided address.
-                    <span className="block mt-1.5 text-app-success/80 font-medium italic">
-                      *Please check your Spam or Junk folder if you do not see it in your inbox shortly.
-                    </span>
-                  </p>
+                <div className="text-[11px] md:text-xs space-y-3">
+                  <div>
+                    <p className="font-bold uppercase tracking-wide mb-1">Check Your Inbox</p>
+                    <p className="opacity-90 leading-relaxed">
+                      A confirmation email containing your registration details and event guidelines has been dispatched to your provided address.
+                      <span className="block mt-1 text-app-success/80 font-medium italic">
+                        *Please check your Spam or Junk folder if you do not see it in your inbox shortly.
+                      </span>
+                    </p>
+                  </div>
+                  {yearLevel === '3rd Year' && (
+                    <div className="pt-2.5 border-t border-app-success/20 space-y-1.5">
+                      <div>
+                        <p className="font-bold uppercase tracking-wide mb-0.5 text-white text-[10px]">Poster Presentation Schedule</p>
+                        <p className="opacity-90 leading-relaxed text-app-text-secondary">
+                          The Poster Presentations and Exhibition are scheduled to commence at <strong className="text-white">11:00 AM</strong>. Please plan your arrival accordingly.
+                        </p>
+                      </div>
+                      <div className="pt-0.5">
+                        <p className="opacity-90 leading-relaxed text-app-text-secondary">
+                          Please note that you are only required to <strong className="text-white font-semibold">log your attendance once</strong> during the exhibition session to be eligible for your certificate.
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -454,6 +471,14 @@ const StudentRegistration: React.FC = () => {
 
           {yearLevel === '3rd Year' && (
             <div className="space-y-4 animate-in fade-in slide-in-from-left-2 duration-500">
+              <div className="bg-app-warning/10 border border-app-warning/20 p-3 rounded-xl animate-in slide-in-from-top-2 duration-300">
+                <div className="text-[11px] md:text-xs text-left">
+                  <p className="font-bold uppercase tracking-wider mb-0.5 text-white text-[10px]">Poster Attendee Registration Only</p>
+                  <p className="opacity-90 leading-relaxed text-app-text-secondary text-[11px]">
+                    You are registering exclusively as a <strong className="text-white font-semibold">Poster Attendee</strong>. Please note that access is restricted to the poster exhibition area, and entry into the main auditorium is not permitted due to capacity limitations.
+                  </p>
+                </div>
+              </div>
               <Input
                 label="Email Address"
                 type="email"
