@@ -25,8 +25,9 @@ transporter.verify((error, success) => {
 /**
  * Sends a registration success email
  */
-export const sendRegistrationEmail = async (email: string, name: string, role?: string) => {
-  const isPoster = role === 'Poster Presenter';
+export const sendRegistrationEmail = async (email: string, name: string, role?: string | string[]) => {
+  const roles = Array.isArray(role) ? role : (role ? [role] : []);
+  const isPoster = roles.includes('Poster Presenter') || roles.includes('Poster Attendee');
 
   const mailOptions = {
     from: `"Synergy Event Team" <${process.env.SMTP_USER}>`,
@@ -41,10 +42,16 @@ export const sendRegistrationEmail = async (email: string, name: string, role?: 
         <div style="background-color: #f8fafc; padding: 15px; border-radius: 8px; margin: 20px 0;">
           <h3 style="margin-top: 0; margin-bottom: 5px; color: #1e293b;">Event Schedule:</h3>
           <p style="margin: 0 0 10px 0; color: #475569; font-weight: bold;">📅 May 20, 2026</p>
-          <ul style="list-style: none; padding-left: 0;">
-            <li>☀️ <strong>AM Session:</strong> 9:00 AM – 12:00 PM</li>
-            <li>🌙 <strong>PM Session:</strong> 1:00 PM – 5:00 PM</li>
-          </ul>
+          ${isPoster ? `
+            <ul style="list-style: none; padding-left: 0; margin: 0; color: #475569;">
+              <li>🎨 <strong>Poster Session & Exhibition:</strong> 11:00 AM – 5:00 PM</li>
+            </ul>
+          ` : `
+            <ul style="list-style: none; padding-left: 0; margin: 0; color: #475569;">
+              <li>☀️ <strong>AM Session:</strong> 9:00 AM – 12:00 PM</li>
+              <li>🌙 <strong>PM Session:</strong> 1:00 PM – 5:00 PM</li>
+            </ul>
+          `}
         </div>
 
         <div style="border-left: 4px solid #f59e0b; padding-left: 15px; margin: 20px 0;">
@@ -54,7 +61,13 @@ export const sendRegistrationEmail = async (email: string, name: string, role?: 
               <li><strong>Check-in Window:</strong> Attendance begins at <strong>8:00 AM</strong> and closes promptly at <strong>8:30 AM</strong>.</li>
               <li><strong>Slot Policy:</strong> Please arrive early. Any pre-registered slots not claimed by <strong>8:30 AM</strong> will be released and allocated to walk-in participants.</li>
             ` : ''}
-            <li><strong>Mandatory Attendance:</strong> You need to make an attendance for both the AM and PM sessions for certificate eligibility.</li>
+            ${roles.includes('Poster Attendee') ? `
+              <li><strong>Mandatory Attendance:</strong> You only need to log your attendance once during the exhibition session for certificate eligibility.</li>
+            ` : roles.includes('Poster Presenter') ? `
+              <li><strong>Mandatory Attendance:</strong> You need to record both your check-in and logout for the Poster Session to be eligible for a certificate.</li>
+            ` : `
+              <li><strong>Mandatory Attendance:</strong> You need to log your attendance for both the AM and PM sessions for certificate eligibility.</li>
+            `}
           </ul>
         </div>
 

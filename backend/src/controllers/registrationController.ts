@@ -36,6 +36,8 @@ export const registerEntry = async (req: Request, res: Response) => {
     // 0.1 Quota/Capacity Check (Real-Time Validation)
     let targetEventId = latestEvent.id;
     const isPoster = otherData.studentRole === 'Poster Presenter';
+    const is3rdYear = category === 'student' && otherData.yearLevel === '3rd Year';
+    const shouldIgnoreQuota = isPoster || is3rdYear;
 
     if (quotaId) {
       // Fetch the specific quota record (Use maybeSingle to avoid coercion errors)
@@ -91,7 +93,7 @@ export const registerEntry = async (req: Request, res: Response) => {
 
       if (countError) throw countError;
 
-      if (!isPoster && count !== null && count >= quota.capacity) {
+      if (!shouldIgnoreQuota && count !== null && count >= quota.capacity) {
         return res.status(423).json({
           error: 'Registration Capacity Reached',
           message: `The registration limit for ${quota.category} has already been reached.`,
@@ -189,7 +191,9 @@ export const registerEntry = async (req: Request, res: Response) => {
       }
     }
 
-    const currentRole = otherData.studentRole || otherData.registered_category;
+    const currentRole = is3rdYear 
+      ? 'Poster Attendee' 
+      : (otherData.studentRole || otherData.registered_category);
     let finalRoles: string[] = [];
 
     if (previousRoles.length > 0) {
@@ -216,7 +220,7 @@ export const registerEntry = async (req: Request, res: Response) => {
       full_name: finalName,
       email: email || null,
       external_id: externalId,
-      quota_id: isPoster ? null : (quotaId || null),
+      quota_id: shouldIgnoreQuota ? null : (quotaId || null),
       metadata: metadata,
       status: 'registered',
       reg_type: req.body.isWalkIn ? 'walk-in' : 'pre-reg',
