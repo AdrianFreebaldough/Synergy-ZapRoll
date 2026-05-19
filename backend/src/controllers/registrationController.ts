@@ -35,9 +35,9 @@ export const registerEntry = async (req: Request, res: Response) => {
 
     // 0.1 Quota/Capacity Check (Real-Time Validation)
     let targetEventId = latestEvent.id;
-    const isPoster = otherData.studentRole === 'Poster Presenter';
     const is3rdYear = category === 'student' && otherData.yearLevel === '3rd Year';
-    const shouldIgnoreQuota = isPoster || is3rdYear;
+    const selectedRole = otherData.studentRole || (is3rdYear && !req.body.isWalkIn ? 'Poster Attendee' : null);
+    const shouldIgnoreQuota = selectedRole === 'Poster Presenter' || selectedRole === 'Poster Attendee';
 
     if (quotaId) {
       // Fetch the specific quota record (Use maybeSingle to avoid coercion errors)
@@ -191,7 +191,7 @@ export const registerEntry = async (req: Request, res: Response) => {
       }
     }
 
-    const currentRole = is3rdYear 
+    const currentRole = (is3rdYear && !req.body.isWalkIn)
       ? 'Poster Attendee' 
       : (otherData.studentRole || otherData.registered_category);
     let finalRoles: string[] = [];

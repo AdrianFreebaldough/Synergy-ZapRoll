@@ -191,39 +191,56 @@ const WalkInRegistration: React.FC = () => {
 
         {yearLevel === '3rd Year' && (
           <div className="space-y-4 animate-in fade-in slide-in-from-left-2 duration-500">
-            <div className="bg-app-warning/10 border border-app-warning/20 p-3 rounded-xl animate-in slide-in-from-top-2 duration-300">
-              <div className="text-[11px] md:text-xs text-left">
-                <p className="font-bold uppercase tracking-wider mb-0.5 text-white text-[10px]">Poster Attendee Registration Only</p>
-                <p className="opacity-90 leading-relaxed text-app-text-secondary text-[11px]">
-                  You are registering exclusively as a <strong className="text-white font-semibold">Poster Attendee</strong>. Please note that access is restricted to the poster exhibition area, and entry into the main auditorium is not permitted due to capacity limitations.
-                </p>
+            <Select
+              label="Participation Role"
+              options={[
+                { value: 'Poster Attendee', label: 'Poster Attendee' },
+                { value: 'Colloquium Participant', label: 'Colloquium Participant' }
+              ]}
+              {...register('studentRole')}
+              error={errors.studentRole?.message}
+            />
+
+            {studentRole === 'Poster Attendee' && (
+              <div className="bg-app-warning/10 border border-app-warning/20 p-3 rounded-xl animate-in slide-in-from-top-2 duration-300">
+                <div className="text-[11px] md:text-xs text-left">
+                  <p className="font-bold uppercase tracking-wider mb-0.5 text-white text-[10px]">Poster Attendee Registration Only</p>
+                  <p className="opacity-90 leading-relaxed text-app-text-secondary text-[11px]">
+                    You are registering exclusively as a <strong className="text-white font-semibold">Poster Attendee</strong>. Please note that access is restricted to the poster exhibition area, and entry into the main auditorium is not permitted due to capacity limitations.
+                  </p>
+                </div>
               </div>
-            </div>
-            <Input
-              label="Email Address"
-              type="email"
-              placeholder="your.name@example.com"
-              {...register('email')}
-              error={errors.email?.message}
-            />
-            <Input
-              label="Student ID"
-              {...register('studentId', { onChange: handleStudentIdChange })}
-              placeholder="00-0000"
-              maxLength={7}
-              error={errors.studentId?.message}
-            />
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Input label="Last Name" {...register('lastName')} placeholder="Dela Cruz" error={errors.lastName?.message} />
-              <Input label="First Name" {...register('firstName')} placeholder="Juan" error={errors.firstName?.message} />
-              <Input label="Middle Name" {...register('middleName')} placeholder="Optional" error={errors.middleName?.message} />
-            </div>
-            <Select 
-              label="Section" 
-              options={section3rdYearOptions} 
-              {...register('section')} 
-              error={errors.section?.message} 
-            />
+            )}
+
+            {studentRole && (
+              <div className="space-y-4 animate-in fade-in zoom-in-95 duration-500">
+                <Input
+                  label="Email Address"
+                  type="email"
+                  placeholder="your.name@example.com"
+                  {...register('email')}
+                  error={errors.email?.message}
+                />
+                <Input
+                  label="Student ID"
+                  {...register('studentId', { onChange: handleStudentIdChange })}
+                  placeholder="00-0000"
+                  maxLength={7}
+                  error={errors.studentId?.message}
+                />
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Input label="Last Name" {...register('lastName')} placeholder="Dela Cruz" error={errors.lastName?.message} />
+                  <Input label="First Name" {...register('firstName')} placeholder="Juan" error={errors.firstName?.message} />
+                  <Input label="Middle Name" {...register('middleName')} placeholder="Optional" error={errors.middleName?.message} />
+                </div>
+                <Select 
+                  label="Section" 
+                  options={section3rdYearOptions} 
+                  {...register('section')} 
+                  error={errors.section?.message} 
+                />
+              </div>
+            )}
           </div>
         )}
 
@@ -344,7 +361,7 @@ const WalkInRegistration: React.FC = () => {
           <LoadingButton
             type="submit"
             isLoading={isSubmitting}
-            disabled={!yearLevel}
+            disabled={!yearLevel || !studentRole}
             loadingText="Processing Walk-In..."
             size="lg"
           >
