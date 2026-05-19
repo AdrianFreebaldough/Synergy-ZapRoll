@@ -3,24 +3,138 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'smtp.gmail.com',
-  port: parseInt(process.env.SMTP_PORT || '587'),
-  secure: false, 
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-});
+interface SMTPAccount {
+  email: string;
+  transporter: nodemailer.Transporter;
+  isBlocked: boolean;
+  blockedAt: number | null;
+}
 
-// Verify connection on startup
-transporter.verify((error, success) => {
-  if (error) {
-    console.error('❌ Mailer Connection Error:', error);
-  } else {
-    console.log('✅ Mailer is ready to send emails');
+// 1. Initialize SMTP pool with primary and backup accounts
+const accountsConfig = [
+  {
+    email: process.env.SMTP_USER || 'qcusynergy2026@gmail.com',
+    pass: process.env.SMTP_PASS || 'urov dlgy ccbo piee'
+  },
+  {
+    email: process.env.SMTP_USER_BACKUP_1 || 'qcusynergy2026.2@gmail.com',
+    pass: process.env.SMTP_PASS_BACKUP_1 || 'fkaq ugkm svse rtxf'
   }
-});
+  // To add more backup accounts in the future, simply append them below!
+];
+
+const smtpPool: SMTPAccount[] = accountsConfig
+  .filter(cfg => cfg.email && cfg.pass)
+  .map(cfg => {
+    const transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST || 'smtp.gmail.com',
+      port: parseInt(process.env.SMTP_PORT || '587'),
+      secure: false, 
+      auth: {
+        user: cfg.email,
+        pass: cfg.pass,
+      },
+    });
+
+    // Verify connections on startup
+    transporter.verify((error) => {
+      if (error) {
+        console.error(`❌ Mailer Connection Error for ${cfg.email}:`, error.message);
+      } else {
+        console.log(`✅ Mailer is ready to send emails using ${cfg.email}`);
+      }
+    });
+
+    return {
+      email: cfg.email,
+      transporter,
+      isBlocked: false,
+      blockedAt: null
+    };
+  });
+
+/**
+ * Detects if Nodemailer error is related to quota, sending limits, or suspensions
+ */
+const isQuotaLimitError = (error: any): boolean => {
+  const errMsg = String(error?.message || error || '').toLowerCase();
+  const errCode = String(error?.code || '');
+
+  return (
+    errMsg.includes('limit') ||
+    errMsg.includes('quota') ||
+    errMsg.includes('blocked') ||
+    errMsg.includes('exceeded') ||
+    errMsg.includes('suspension') ||
+    errMsg.includes('rejected') ||
+    errCode === '454' ||
+    errCode === '421' ||
+    errCode === '550'
+  );
+};
+
+/**
+ * Sends an email with automatic SMTP rotation, instant skip for blocked accounts,
+ * unified replyTo forwarding, and 24-hour auto-reset cooldown.
+ */
+const sendMailWithRotation = async (options: {
+  to: string;
+  subject: string;
+  html: string;
+}): Promise<any> => {
+  if (smtpPool.length === 0) {
+    throw new Error('No SMTP accounts are configured in the system.');
+  }
+
+  const COOLDOWN_MS = 24 * 60 * 60 * 1000; // 24 Hours
+  const now = Date.now();
+
+  // Reset any accounts whose block duration has expired
+  smtpPool.forEach(acc => {
+    if (acc.isBlocked && acc.blockedAt && (now - acc.blockedAt > COOLDOWN_MS)) {
+      console.log(`🔄 [Mailer] 24-hour block expired for ${acc.email}. Unblocking account.`);
+      acc.isBlocked = false;
+      acc.blockedAt = null;
+    }
+  });
+
+  let lastError: any = null;
+
+  // Try active accounts sequentially
+  for (const acc of smtpPool) {
+    if (acc.isBlocked) {
+      console.log(`⏩ [Mailer] Skipping blocked account: ${acc.email}`);
+      continue;
+    }
+
+    try {
+      const mailOptions = {
+        from: `"Synergy Event Team" <${acc.email}>`,
+        to: options.to,
+        subject: options.subject,
+        html: options.html,
+        replyTo: smtpPool[0].email // Direct replies strictly to your primary inbox
+      };
+
+      const info = await acc.transporter.sendMail(mailOptions);
+      console.log(`✉️ [Mailer] Email sent successfully using ${acc.email} to: ${options.to}`);
+      return info;
+    } catch (error: any) {
+      console.error(`⚠️ [Mailer] Failed to send email using ${acc.email}:`, error.message || error);
+
+      if (isQuotaLimitError(error)) {
+        console.warn(`⛔ [Mailer] Account ${acc.email} has hit its daily sending quota/limit. Marking as BLOCKED.`);
+        acc.isBlocked = true;
+        acc.blockedAt = Date.now();
+      }
+
+      lastError = error;
+      // Loop automatically rolls over to try the next available unblocked transporter!
+    }
+  }
+
+  throw new Error(`All configured SMTP accounts failed to send the email. Last error: ${lastError?.message || lastError}`);
+};
 
 /**
  * Sends a registration success email
@@ -29,11 +143,7 @@ export const sendRegistrationEmail = async (email: string, name: string, role?: 
   const roles = Array.isArray(role) ? role : (role ? [role] : []);
   const isPoster = roles.includes('Poster Presenter') || roles.includes('Poster Attendee');
 
-  const mailOptions = {
-    from: `"Synergy Event Team" <${process.env.SMTP_USER}>`,
-    to: email,
-    subject: 'Synergy Event - Registration Confirmed!',
-    html: `
+  const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
         <h2 style="color: #2563eb; text-align: center;">Registration Successful!</h2>
         <p>Hi <strong>${name}</strong>,</p>
@@ -75,14 +185,16 @@ export const sendRegistrationEmail = async (email: string, name: string, role?: 
           This is an automated message. Please do not reply to this email.
         </p>
       </div>
-    `,
-  };
+    `;
 
   try {
-    await transporter.sendMail(mailOptions);
-    console.log(`Registration email sent to: ${email}`);
+    await sendMailWithRotation({
+      to: email,
+      subject: 'Synergy Event - Registration Confirmed!',
+      html
+    });
   } catch (error) {
-    console.error('Error sending registration email:', error);
+    console.error('Error sending registration email after rotation fallback:', error);
   }
 };
 
@@ -92,11 +204,7 @@ export const sendRegistrationEmail = async (email: string, name: string, role?: 
 export const sendAttendanceEmail = async (email: string, name: string, sessionType: string, verificationId: string) => {
   const sessionLabel = sessionType.toUpperCase().includes('PM') ? 'Afternoon (PM)' : 'Morning (AM)';
   
-  const mailOptions = {
-    from: `"Synergy Event Team" <${process.env.SMTP_USER}>`,
-    to: email,
-    subject: `Attendance Verified - ${sessionLabel}`,
-    html: `
+  const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
         <h2 style="color: #10b981; text-align: center;">Attendance Verified!</h2>
         <p>Hi <strong>${name}</strong>,</p>
@@ -114,13 +222,15 @@ export const sendAttendanceEmail = async (email: string, name: string, sessionTy
           Verified on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}
         </p>
       </div>
-    `,
-  };
+    `;
 
   try {
-    await transporter.sendMail(mailOptions);
-    console.log(`Attendance email sent to: ${email}`);
+    await sendMailWithRotation({
+      to: email,
+      subject: `Attendance Verified - ${sessionLabel}`,
+      html
+    });
   } catch (error) {
-    console.error('Error sending attendance email:', error);
+    console.error('Error sending attendance email after rotation fallback:', error);
   }
 };
