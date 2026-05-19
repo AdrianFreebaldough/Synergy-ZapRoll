@@ -232,8 +232,36 @@ export const registerEntry = async (req: Request, res: Response) => {
       ? 'Poster Attendee' 
       : (otherData.studentRole || otherData.registered_category);
 
-    // Overwrite the studentRole with the new choice instead of merging or doubling previous values
-    const finalRoles: string[] = currentRole ? [currentRole] : [];
+    let finalRoles: string[] = [];
+
+    // Extract previous roles from their first registration if in edit/upsert mode
+    let previousRoles: string[] = [];
+    if (isEdit && existingReg) {
+      const prevMeta = existingReg.metadata as any;
+      if (prevMeta && prevMeta.studentRole) {
+        previousRoles = Array.isArray(prevMeta.studentRole)
+          ? prevMeta.studentRole
+          : [prevMeta.studentRole];
+      }
+    }
+
+    if (is3rdYear && !req.body.isWalkIn) {
+      // For 3rd-year pre-registrations, discard any 4th-year participant/presenter roles
+      finalRoles = ['Poster Attendee'];
+    } else if (previousRoles.length > 0) {
+      const hadPosterPresenterFirst = previousRoles.includes('Poster Presenter');
+      const isNewColloquiumRole = currentRole === 'Colloquium Participant' || currentRole === 'Colloquium Presenter';
+
+      // Strict One-Way Dual Role: Only merge if their first registration was Poster Presenter
+      if (hadPosterPresenterFirst && isNewColloquiumRole) {
+        finalRoles = ['Poster Presenter', currentRole];
+      } else {
+        // Clean overwrite for all other edits and corrections to prevent doubling
+        finalRoles = currentRole ? [currentRole] : [];
+      }
+    } else {
+      finalRoles = currentRole ? [currentRole] : [];
+    }
 
     // 3. Bundle metadata
     const isPmSession = activeSession && (activeSession.session_type || '').toLowerCase().includes('pm');
