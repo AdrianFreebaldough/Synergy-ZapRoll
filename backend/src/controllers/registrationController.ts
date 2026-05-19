@@ -196,7 +196,10 @@ export const registerEntry = async (req: Request, res: Response) => {
       : (otherData.studentRole || otherData.registered_category);
     let finalRoles: string[] = [];
 
-    if (previousRoles.length > 0) {
+    if (is3rdYear && !req.body.isWalkIn) {
+      // For 3rd-year pre-registrations, discard any 4th-year participant/presenter roles
+      finalRoles = ['Poster Attendee'];
+    } else if (previousRoles.length > 0) {
       finalRoles = [...previousRoles];
       if (currentRole && !finalRoles.includes(currentRole)) {
         finalRoles.push(currentRole);
