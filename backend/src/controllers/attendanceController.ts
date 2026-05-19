@@ -73,12 +73,20 @@ export const submitAttendance = async (req: Request, res: Response) => {
     // 3. Record Attendance (Robust Upsert Logic)
     const typeLower = (session.session_type || '').toLowerCase();
     const metadata = registration.metadata as any;
+    const roles = Array.isArray(metadata?.studentRole) ? metadata.studentRole : (metadata?.studentRole ? [metadata.studentRole] : []);
+    const is3rdYear = metadata?.yearLevel === '3rd Year';
+    const isPosterAttendee = roles.includes('Poster Attendee');
 
     // Resolve column dynamically based on the active session type
-    const sessionTypeField = typeLower.includes('poster') ? 'poster_scanned_at' :
-                             typeLower.includes('employee') ? 'employee_scanned_at' : 
-                             typeLower.includes('pm') ? 'pm_scanned_at' : 
-                             'am_scanned_at';
+    let sessionTypeField = typeLower.includes('poster') ? 'poster_scanned_at' :
+                           typeLower.includes('employee') ? 'employee_scanned_at' : 
+                           typeLower.includes('pm') ? 'pm_scanned_at' : 
+                           'am_scanned_at';
+
+    // BUSINESS RULE: If the student is a 3rd Year or a Poster Attendee, their attendance MUST be saved in poster_scanned_at
+    if (is3rdYear || isPosterAttendee) {
+      sessionTypeField = 'poster_scanned_at';
+    }
 
     const now = new Date().toISOString();
 
@@ -97,7 +105,6 @@ export const submitAttendance = async (req: Request, res: Response) => {
     }
 
     // Build upsert payload
-    const roles = Array.isArray(metadata?.studentRole) ? metadata.studentRole : (metadata?.studentRole ? [metadata.studentRole] : []);
     const isPosterPresenter = roles.includes('Poster Presenter');
 
     const upsertPayload: any = {
@@ -131,7 +138,6 @@ export const submitAttendance = async (req: Request, res: Response) => {
     // 4. Trigger Attendance Email (Async)
     // Filter: Only 3rd Years, 4th Year Colloquium Participants, 4th Year Colloquium Presenters, and Poster Presenters
     const meta = registration.metadata as any;
-    const is3rdYear = meta?.yearLevel === '3rd Year';
     const isCollPart = roles.includes('Colloquium Participant');
     const isCollPres = roles.includes('Colloquium Presenter');
     const isPosterPres = roles.includes('Poster Presenter');
