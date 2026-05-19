@@ -461,13 +461,22 @@ const StudentRegistration: React.FC = () => {
               {
                 value: '3rd Year',
                 label: `3rd Year ${is3rdYearDisabled ? '(Opens May 19, 10:00 AM)' : ''}`,
-                disabled: is3rdYearDisabled
+                disabled: is3rdYearDisabled || (isEditingOriginal && yearLevel !== '3rd Year')
               },
-              { value: '4th Year', label: '4th Year' }
+              { 
+                value: '4th Year', 
+                label: '4th Year',
+                disabled: isEditingOriginal && yearLevel !== '4th Year'
+              }
             ]}
             {...register('yearLevel')}
             error={errors.yearLevel?.message}
           />
+          {isEditingOriginal && (
+            <p className="text-[10px] text-app-warning/80 mt-1 italic animate-in fade-in slide-in-from-top-1">
+              *Year level is locked and cannot be modified when editing existing registration details.
+            </p>
+          )}
 
           {yearLevel === '3rd Year' && (
             <div className="space-y-4 animate-in fade-in slide-in-from-left-2 duration-500">
