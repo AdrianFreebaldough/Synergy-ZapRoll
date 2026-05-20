@@ -71,7 +71,8 @@ export const registerEntry = async (req: Request, res: Response) => {
       }
 
       // 0.2 Active Status Check
-      if (!quota.is_open) {
+      // Walk-ins are governed by the sessions table (see below), not the quota's is_open flag
+      if (!req.body.isWalkIn && !quota.is_open) {
         return res.status(403).json({
           error: 'Registration Closed',
           message: `Registration for ${quota.category} is currently closed.`,
@@ -105,34 +106,32 @@ export const registerEntry = async (req: Request, res: Response) => {
     // Pre-lookup open session for walk-ins to avoid server timezone issues
     let activeSession: any = null;
     if (req.body.isWalkIn) {
-      let query = supabase
+      const { data: sessions, error: sessionLookupError } = await supabase
         .from('sessions')
         .select('*')
         .eq('event_id', targetEventId)
-        .eq('is_open', true);
-
-      if (category === 'employee') {
-        query = query.ilike('session_type', '%employee%');
-      } else {
-        query = query.not('session_type', 'ilike', '%employee%');
-      }
-
-      // Order by created_at desc and limit to 1 to handle multiple open sessions safely without maybeSingle crashes
-      const { data: sessions, error: sessionLookupError } = await query
-        .order('created_at', { ascending: false })
-        .limit(1);
+        .eq('is_open', true)
+        .order('created_at', { ascending: false });
 
       if (sessionLookupError) throw new Error(`Session Lookup Failed: ${sessionLookupError.message}`);
 
-      const session = sessions && sessions.length > 0 ? sessions[0] : null;
+      // Find the specific Walk-in session for this category
+      activeSession = sessions?.find(s => {
+        const combined = ((s.name || '') + ' ' + (s.session_type || '')).toLowerCase();
+        const isWalkIn = combined.includes('walk');
+        const matchesCategory = combined.includes(category.toLowerCase());
+        const isGenericWalkIn = isWalkIn && !combined.includes('student') && !combined.includes('employee') && !combined.includes('guest');
+        
+        return isWalkIn && (matchesCategory || isGenericWalkIn);
+      });
 
-      if (!session) {
-        return res.status(400).json({
-          error: 'No Open Session',
-          message: `No active open session was found for walk-in check-in. Please ensure a session is open before registering.`
+      if (!activeSession) {
+        return res.status(403).json({
+          error: 'Registration Closed',
+          message: `Walk-in registration for ${category} is currently closed.`,
+          subtext: 'Please ensure the walk-in session is opened by the organizer.'
         });
       }
-      activeSession = session;
     }
 
     // 1. Resolve primary fields (Check all possible name fields)
@@ -264,7 +263,7 @@ export const registerEntry = async (req: Request, res: Response) => {
     }
 
     // 3. Bundle metadata
-    const isPmSession = activeSession && (activeSession.session_type || '').toLowerCase().includes('pm');
+    const isPmSession = activeSession && ((activeSession.session_type || '') + ' ' + (activeSession.name || '')).toLowerCase().includes('pm');
     const walkinFlags = isPreRegWalkIn ? {
       attended_as_walkin: true,
       walkin_session: isPmSession ? 'pm-reg' : 'am-reg',
@@ -344,7 +343,7 @@ export const registerEntry = async (req: Request, res: Response) => {
     // 5. Automatic Attendance for Walk-ins (Mandatory for walk-in registrations)
     if (req.body.isWalkIn && activeSession) {
       const now = new Date();
-      const typeLower = (activeSession.session_type || '').toLowerCase();
+      const typeLower = ((activeSession.session_type || '') + ' ' + (activeSession.name || '')).toLowerCase();
       const sessionTypeField =
         typeLower.includes('employee') ? 'employee_scanned_at' :
           typeLower.includes('pm') ? 'pm_scanned_at' :
