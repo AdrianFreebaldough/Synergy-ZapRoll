@@ -249,12 +249,18 @@ export const registerEntry = async (req: Request, res: Response) => {
       finalRoles = ['Poster Attendee'];
     } else if (previousRoles.length > 0) {
       const hadPosterPresenterFirst = previousRoles.includes('Poster Presenter');
+      const hadPosterAttendeeFirst = previousRoles.includes('Poster Attendee');
       const isNewColloquiumRole = currentRole === 'Colloquium Participant' || currentRole === 'Colloquium Presenter';
 
       // Strict One-Way Dual Role: Only merge if their first registration was Poster Presenter
       if (hadPosterPresenterFirst && isNewColloquiumRole) {
         finalRoles = ['Poster Presenter', currentRole];
-      } else {
+      } 
+      // NEW RULE: Poster Attendee can have a secondary role without overwriting the first
+      else if (hadPosterAttendeeFirst && currentRole && currentRole !== 'Poster Attendee') {
+        finalRoles = ['Poster Attendee', currentRole];
+      }
+      else {
         // Clean overwrite for all other edits and corrections to prevent doubling
         finalRoles = currentRole ? [currentRole] : [];
       }
